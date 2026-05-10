@@ -1,4 +1,4 @@
-# MCP Financial Research Agent
+# Financial Research Agent
 
 MCP Financial Research Agent is a production-shaped financial research and platform intelligence system. It combines MCP-based tool access, retrieval-augmented generation, LangGraph workflows, guardrails, caching, auditability, human review, evaluation pipelines, and observability.
 
