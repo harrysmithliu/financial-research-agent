@@ -35,6 +35,7 @@ pip-wheel-metadata/
 *.pfx
 
 # Local data and generated outputs
+intern/
 data/raw/
 data/processed/
 data/runtime/

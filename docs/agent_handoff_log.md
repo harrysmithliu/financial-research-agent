@@ -15,7 +15,11 @@ Completed handoffs and planned future checkpoints use different heading formats:
 
 Only completed handoffs receive dated sequence suffixes such as `A`, `B`, or `C`. Planned checkpoints do not receive sequence numbers and do not reserve a position in the completed handoff history.
 
-If a new completed handoff occurs before a planned checkpoint becomes active, append the new completed handoff above or below the planned checkpoint wherever it is easiest to keep the document readable. Do not renumber completed historical handoffs. When a planned checkpoint actually becomes active, convert it into a new completed handoff using that day's dated heading, or create a new completed handoff that references the planned checkpoint.
+Write a planned checkpoint when a future return point is already known but the current agent is not ready to hand off completed work yet. Planned checkpoints are especially useful for cross-agent loops, such as external data expansion returning to ingestion, or canonical ingestion returning later for storage persistence.
+
+Place planned checkpoints immediately after the completed handoff that creates or explains the future return point. Keep them in expected workflow order. If a new completed handoff occurs before a planned checkpoint becomes active, insert the completed handoff in chronological order without renumbering previous completed handoffs, and keep the planned checkpoint near the handoff it logically follows.
+
+When a planned checkpoint becomes active, either convert it into a completed handoff using that day's dated heading, or create a new completed handoff that explicitly references the planned checkpoint. Do not leave an active checkpoint marked as `planned` after the handoff is complete.
 
 Each handoff entry should include:
 
@@ -24,6 +28,18 @@ Each handoff entry should include:
 - handoff status: `ready`, `blocked`, or `planned`
 - goal for the next agent
 - input artifacts and reference docs
+- suggested first task
+- acceptance criteria
+- known gaps or out-of-scope work
+
+Each planned checkpoint should include:
+
+- date
+- from agent or role
+- to agent or role
+- status: `planned`
+- trigger conditions
+- goal
 - suggested first task
 - acceptance criteria
 - known gaps or out-of-scope work
@@ -152,7 +168,7 @@ Start with deterministic tests around:
 
 These should follow after the local normalization path is stable.
 
-## Planned Checkpoint: Ingestion Stable To External Data Expansion
+## Handoff 2026-05-11-B: Ingestion Stable To External Data Expansion
 
 Date: 2026-05-11
 
@@ -160,23 +176,78 @@ From agent: Ingestion / Backend Agent
 
 To agent: Data Engineering Agent
 
-Status: `planned`
+Status: `ready`
 
-### Trigger
+### Completed Ingestion Work
 
-Start this handoff only after the first local ingestion path is stable.
+The first local manifest-driven ingestion path is stable and ready for external data expansion.
 
-Minimum trigger conditions:
+Implemented code artifacts:
 
-- `data/manifest.json` is parsed by code.
-- All local synthetic sources resolve from the repository root.
-- Fund records, factsheets, synthetic issues, and eval cases normalize into canonical objects.
-- At least one local ingestion test path passes end to end without requiring PostgreSQL, pgvector, Redis, or an LLM provider.
-- Canonical model fields are stable enough that external samples can be mapped without repeated schema churn.
+- `ingestion/loaders.py`
+- `ingestion/sources/local_files.py`
+- `ingestion/normalizers.py`
+- `ingestion/jobs.py`
+- `storage/models.py`
+
+Current local ingestion entry point:
+
+```python
+from ingestion.jobs import load_seed_dataset
+
+result = load_seed_dataset(repo_root)
+```
+
+Current output shape:
+
+- 4 fund `StructuredRecord` items from `data/sample_funds/funds.json`
+- 4 factsheet `Document` items from `data/sample_documents/*.md`
+- 3 issue metadata `StructuredRecord` items from `data/sample_issues/issues.json`
+- 9 issue/comment `Document` items from `data/sample_issues/issues.json`
+- 5 `EvalCase` items from `data/eval_cases/fund_eval_cases.json`
+- 7 total structured records via `IngestionResult.structured_records`
+
+Verification command:
+
+```bash
+python3 -m pytest tests
+```
+
+Latest verified result:
+
+```text
+30 passed
+```
 
 ### Goal
 
 Expand the local seed dataset with small, curated external samples from Hugging Face and GitHub while preserving the same manifest-driven ingestion contract.
+
+The next agent should start with data expansion, not backend rewiring. Keep additions small and inspectable.
+
+### Input Artifacts And Reference Docs
+
+Code:
+
+- `ingestion/jobs.py`
+- `ingestion/loaders.py`
+- `ingestion/normalizers.py`
+- `storage/models.py`
+- `tests/test_seed_ingestion_job.py`
+
+Data:
+
+- `data/manifest.json`
+- `data/sample_funds/funds.json`
+- `data/sample_documents/*.md`
+- `data/sample_issues/issues.json`
+- `data/eval_cases/fund_eval_cases.json`
+
+Reference docs:
+
+- `docs/financial_research_agent_requirements.md`
+- `docs/canonical_data_formats.md`
+- `data/README.md`
 
 ### Suggested Data Sources
 
@@ -204,7 +275,7 @@ Keep the first external batch small enough that reviewers can inspect every reco
 
 ### Minimal Acceptance Criteria
 
-The external data expansion handoff is complete when:
+The next data expansion handoff is complete when:
 
 - External source provenance is documented.
 - New samples are listed in `data/manifest.json`.
@@ -212,10 +283,117 @@ The external data expansion handoff is complete when:
 - Eval cases include expected citations or clear evidence references.
 - No real client data, credentials, or unsafe investment advice are introduced.
 
-### Out Of Scope
+### Known Gaps And Out Of Scope
+
+Known gaps:
+
+- `load_seed_dataset` is local and synchronous.
+- No PostgreSQL persistence, pgvector indexing, Redis jobs, FastAPI route wiring, MCP Gateway, or LangGraph execution yet.
+- External data source schemas are not implemented yet.
+- Data quality checks are limited to deterministic model and normalizer validation.
+
+Out of scope for the next Data Engineering Agent:
 
 - Large-scale dataset mirroring
 - Unbounded GitHub crawling
 - Paid cloud ingestion
 - Live brokerage or trading data
 - Production use of real client data
+- Real investment advice
+
+### Out Of Scope
+
+- Embedding generation
+- pgvector indexing
+- PostgreSQL migrations
+- Redis-backed jobs
+- FastAPI route wiring
+- LangGraph workflow execution
+- MCP Gateway and MCP tools
+
+## Planned Checkpoint: External Data Expansion Back To Ingestion
+
+Date: 2026-05-11
+
+From agent: Data Engineering Agent
+
+To agent: Ingestion / Backend Agent
+
+Status: `planned`
+
+### Trigger
+
+Start this handoff after the Data Engineering Agent has added a small, curated external dataset batch.
+
+Minimum trigger conditions:
+
+- New external sample files are present in `data/`.
+- `data/manifest.json` lists each new external source.
+- `data/README.md` documents source provenance, sample size, licensing notes, and replacement path.
+- External samples are small enough for manual review.
+- No real client data, credentials, live trading data, or unsafe investment advice has been introduced.
+
+### Goal
+
+Adapt and harden the ingestion normalization layer so external samples pass through the same canonical contract as the local synthetic seed dataset.
+
+### Suggested First Task
+
+Run the existing ingestion test suite, inspect the new manifest entries, and identify whether each new source can map to existing `Document`, `StructuredRecord`, or `EvalCase` models without schema changes.
+
+### Acceptance Criteria
+
+- New external sources normalize through the manifest-driven ingestion path.
+- Any new source type or record type has deterministic normalizer coverage.
+- Tests cover successful normalization and at least one malformed external sample path.
+- Existing synthetic seed ingestion remains stable.
+- Canonical fields required for citation, audit, filtering, and evaluation are preserved.
+
+### Known Gaps Or Out Of Scope
+
+- Do not add PostgreSQL persistence in this checkpoint unless explicitly directed.
+- Do not start large-scale crawling or dataset mirroring.
+- Do not introduce paid cloud dependencies.
+- Keep external sample handling small, reviewable, and reversible.
+
+## Planned Checkpoint: Canonical Ingestion To Storage Persistence
+
+Date: 2026-05-11
+
+From agent: Ingestion / Backend Agent
+
+To agent: Ingestion / Backend Agent
+
+Status: `planned`
+
+### Trigger
+
+Start this checkpoint after local and first external sample normalization are stable enough that schema churn is low.
+
+Minimum trigger conditions:
+
+- Synthetic seed ingestion passes end to end.
+- First external sample batch normalizes through the same ingestion path.
+- Canonical `Document`, `StructuredRecord`, and `EvalCase` fields are stable.
+- Data quality checks cover missing fields, duplicate source identifiers, broken citations, and unsupported task types.
+
+### Goal
+
+Move from in-memory canonical normalization toward durable ingestion storage while preserving auditability and replay.
+
+### Suggested First Task
+
+Design the repository boundary between canonical ingestion outputs and storage models before adding database writes.
+
+### Acceptance Criteria
+
+- Canonical objects can be mapped to planned PostgreSQL entities without losing citation or audit metadata.
+- Ingestion job records include source identifiers, dataset name, counts, status, errors, and timestamps.
+- Storage work remains testable locally and does not require an LLM provider.
+- PostgreSQL/pgvector integration is introduced behind clear repository or indexer interfaces.
+
+### Known Gaps Or Out Of Scope
+
+- Do not wire the full `POST /ingestion/jobs` API until the repository boundary is clear.
+- Do not generate embeddings or build pgvector indexes before document chunking behavior is agreed.
+- Do not implement MCP Gateway, LangGraph workflows, or research answer generation in this checkpoint.
