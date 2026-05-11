@@ -62,6 +62,7 @@ This file defines the engineering principles for building MCP Financial Research
 - Implement vertically: each phase should leave the system runnable and testable.
 - Keep interfaces stable before expanding source coverage or model behavior.
 - Favor simple production-shaped components over throwaway scripts.
+- Before writing explanatory Markdown documents, agents must first state the document's purpose and intended audience, then ask the human which file name and directory are approved for writing.
 - Document acceptance evidence for each phase, including commands, sample requests, sample responses, logs, metrics, and known gaps.
 - Do not hide uncertainty. If a feature is incomplete, mark the gap explicitly in the phase report.
 
