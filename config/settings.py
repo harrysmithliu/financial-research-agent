@@ -24,6 +24,8 @@ class Settings:
     app_name: str = "financial-research-agent"
     environment: str = "local"
     log_level: str = "INFO"
+    api_host: str = "0.0.0.0"
+    api_port: int = 8000
     database_url: str = DEFAULT_DATABASE_URL
     redis_url: str = DEFAULT_REDIS_URL
     request_id_header: str = "x-request-id"
@@ -34,6 +36,8 @@ class Settings:
             app_name=_read_env("APP_NAME", cls.app_name),
             environment=_read_env("APP_ENV", cls.environment),
             log_level=_read_env("LOG_LEVEL", cls.log_level).upper(),
+            api_host=_read_env("API_HOST", cls.api_host),
+            api_port=int(_read_env("API_PORT", str(cls.api_port))),
             database_url=_read_env("DATABASE_URL", cls.database_url),
             redis_url=_read_env("REDIS_URL", cls.redis_url),
             request_id_header=_read_env(
