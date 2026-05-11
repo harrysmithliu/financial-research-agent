@@ -4,6 +4,52 @@
 
 This file defines the engineering principles for building MCP Financial Research Agent. All implementation work should treat the system as a production service, even when running locally during development.
 
+## Development Execution Agents
+
+The project is executed by specialized development agents. Each agent owns a bounded delivery area, but all agents share responsibility for preserving production-shaped interfaces, tests, documentation, and handoff clarity.
+
+### Data Engineering Agent
+
+- Owns source data selection, synthetic seed data, curated external samples, source provenance, licensing notes, and data quality checks.
+- Maintains `data/`, dataset manifests, sample source documentation, and small inspectable evaluation samples.
+- Ensures no real client data, credentials, live brokerage data, or unsafe investment advice enter fixtures, tests, or examples.
+
+### Ingestion / Backend Agent
+
+- Owns batch ingestion, loaders, normalizers, canonical internal data models, ingestion jobs, and storage model mapping.
+- Maintains the path from raw source files to `Document`, `DocumentChunk`, `StructuredRecord`, and `EvalCase` outputs.
+- Keeps ingestion deterministic, testable, and ready for later PostgreSQL, pgvector, Redis, and MCP tool integration.
+
+### Foundation / DevOps Agent
+
+- Owns project foundation, runtime scaffolding, local developer experience, environment templates, dependency metadata, Docker Compose, pytest setup, and CI.
+- Maintains `pyproject.toml`, `.env.example`, `docker-compose.yml`, `.github/workflows/`, basic settings, health checks, and service startup evidence.
+- Ensures Phase 0 leaves the system installable, runnable, testable, and observable enough for later feature agents.
+
+### API / Workflow Agent
+
+- Owns FastAPI application structure, API routes, request/response schemas, workflow state transitions, and user-facing service contracts.
+- Maintains research, ingestion, review, evaluation, and health endpoints as they become part of the implementation phases.
+- Coordinates LangGraph workflow entry points without bypassing MCP Gateway, repository, guardrail, or audit boundaries.
+
+### MCP Gateway / Tooling Agent
+
+- Owns MCP Gateway routing, MCP server wiring, tool permission boundaries, tool schemas, structured tool errors, rate-limit hooks, cache hooks, and tool-call audit logs.
+- Maintains MCP tools such as `fund_search`, `fund_metrics`, `document_retrieval`, `issue_search`, `citation_validator`, `pii_filter`, `moderation`, and `eval_runner`.
+- Ensures agent workflows access operational capabilities through explicit tools rather than hidden direct dependencies.
+
+### RAG / Retrieval Agent
+
+- Owns chunking strategy, embedding integration, vector indexing, retrieval, reranking, citation candidate generation, and retrieval quality tests.
+- Maintains retrieval modules and the evidence path from stored documents to cited research output.
+- Preserves citation metadata, source references, and reproducibility needed for review, audit, and evaluation.
+
+### Guardrails / Evaluation Agent
+
+- Owns responsible AI checks, review report logic, evaluation case execution, anonymized evaluation records, metrics, and safety regression reporting.
+- Maintains PII masking, moderation, prompt-injection checks, citation coverage, faithfulness checks, unsafe-financial-advice checks, and blocked-output behavior.
+- Ensures quality and safety failures are visible through tests, review reports, audit records, and evaluation outputs.
+
 ## Product Boundaries
 
 - Build a financial research and platform intelligence system, not an investment advisory product.
