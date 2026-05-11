@@ -1,0 +1,58 @@
+[
+  {
+    "record_type": "fund",
+    "fund_id": "FUND_A",
+    "name": "Northstar Growth Fund",
+    "category": "US Equity",
+    "investment_style": "growth",
+    "expense_ratio": 0.65,
+    "return_1y": 12.4,
+    "return_3y": 8.9,
+    "volatility": 15.2,
+    "sharpe": 0.71,
+    "aum_millions": 1840,
+    "inception_year": 2016
+  },
+  {
+    "record_type": "fund",
+    "fund_id": "FUND_B",
+    "name": "Harbor Value Fund",
+    "category": "US Equity",
+    "investment_style": "value",
+    "expense_ratio": 0.52,
+    "return_1y": 9.1,
+    "return_3y": 7.4,
+    "volatility": 12.8,
+    "sharpe": 0.63,
+    "aum_millions": 2360,
+    "inception_year": 2012
+  },
+  {
+    "record_type": "fund",
+    "fund_id": "FUND_C",
+    "name": "Summit Global Bond Fund",
+    "category": "Global Bond",
+    "investment_style": "income",
+    "expense_ratio": 0.38,
+    "return_1y": 5.2,
+    "return_3y": 3.6,
+    "volatility": 6.4,
+    "sharpe": 0.48,
+    "aum_millions": 1425,
+    "inception_year": 2018
+  },
+  {
+    "record_type": "fund",
+    "fund_id": "FUND_D",
+    "name": "Riverstone Balanced Allocation Fund",
+    "category": "Balanced Allocation",
+    "investment_style": "multi_asset",
+    "expense_ratio": 0.58,
+    "return_1y": 7.8,
+    "return_3y": 6.1,
+    "volatility": 9.7,
+    "sharpe": 0.59,
+    "aum_millions": 980,
+    "inception_year": 2020
+  }
+]
