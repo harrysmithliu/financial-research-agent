@@ -1,0 +1,43 @@
+{
+  "dataset_name": "synthetic_fund_seed",
+  "version": "0.1.0",
+  "description": "Synthetic fund records and factsheets for local ingestion and retrieval tests.",
+  "created_at": "2026-05-11",
+  "sources": [
+    {
+      "source_id": "synthetic_fund_records",
+      "source_type": "sample_dataset",
+      "source_uri": "data/sample_funds/funds.json",
+      "content_type": "structured_records",
+      "record_type": "fund"
+    },
+    {
+      "source_id": "fund_a_factsheet",
+      "source_type": "fund_fact_sheet",
+      "source_uri": "data/sample_documents/fund_a_factsheet.md",
+      "content_type": "document",
+      "fund_id": "FUND_A"
+    },
+    {
+      "source_id": "fund_b_factsheet",
+      "source_type": "fund_fact_sheet",
+      "source_uri": "data/sample_documents/fund_b_factsheet.md",
+      "content_type": "document",
+      "fund_id": "FUND_B"
+    },
+    {
+      "source_id": "fund_c_factsheet",
+      "source_type": "fund_fact_sheet",
+      "source_uri": "data/sample_documents/fund_c_factsheet.md",
+      "content_type": "document",
+      "fund_id": "FUND_C"
+    },
+    {
+      "source_id": "fund_d_factsheet",
+      "source_type": "fund_fact_sheet",
+      "source_uri": "data/sample_documents/fund_d_factsheet.md",
+      "content_type": "document",
+      "fund_id": "FUND_D"
+    }
+  ]
+}
