@@ -397,3 +397,146 @@ Design the repository boundary between canonical ingestion outputs and storage m
 - Do not wire the full `POST /ingestion/jobs` API until the repository boundary is clear.
 - Do not generate embeddings or build pgvector indexes before document chunking behavior is agreed.
 - Do not implement MCP Gateway, LangGraph workflows, or research answer generation in this checkpoint.
+
+## Handoff 2026-05-11-C: Phase 0 Runtime Foundation
+
+Date: 2026-05-11
+
+From agent: Foundation / DevOps Agent
+
+To agent: API / Workflow Agent, Ingestion / Backend Agent, MCP Gateway / Tooling Agent
+
+Status: `ready`
+
+### Goal
+
+Provide the Phase 0 local runtime foundation so feature agents can build on a runnable, testable, Docker-backed service baseline.
+
+### Completed Foundation Work
+
+Implemented foundation artifacts:
+
+- `pyproject.toml`
+- `.env.example`
+- `.dockerignore`
+- `Dockerfile`
+- `docker-compose.yml`
+- `.github/workflows/ci.yml`
+- `api/main.py`
+- `api/middleware.py`
+- `api/routes/health.py`
+- `config/settings.py`
+- `observability/logging.py`
+- `observability/request_context.py`
+- `infra/docker/postgres/init/001_enable_pgvector.sql`
+- `docs/phase_0_acceptance.md`
+
+### Verification Evidence
+
+Detailed evidence is recorded in `docs/phase_0_acceptance.md`.
+
+Verified locally:
+
+```bash
+python3 -m pytest
+```
+
+Latest verified result:
+
+```text
+34 passed
+```
+
+Verified Docker Compose:
+
+```bash
+docker compose config
+docker compose up --build -d
+docker compose exec -T api python -c "from urllib.request import urlopen; print(urlopen('http://127.0.0.1:8000/health', timeout=2).read().decode())"
+docker compose down
+```
+
+Observed API, PostgreSQL/pgvector, and Redis services as healthy during the Compose run.
+
+### Suggested First Task
+
+The next feature agent should use the Phase 0 runtime foundation rather than adding a parallel app or service entry point.
+
+For API / Workflow Agent:
+
+- Add route skeletons behind the existing FastAPI app factory.
+- Keep request ID propagation and JSON logging intact.
+
+For Ingestion / Backend Agent:
+
+- Begin repository boundary design before database writes.
+- Keep in-memory ingestion tests stable while introducing persistence.
+
+For MCP Gateway / Tooling Agent:
+
+- Use the existing settings, logging, and request context modules when introducing gateway routing.
+
+### Acceptance Criteria
+
+This handoff is complete when:
+
+- Future agents can run `python3 -m pytest` from the repository root.
+- Future agents can start the local service stack through Docker Compose.
+- `GET /health` remains lightweight and stable.
+- Request IDs continue to appear in health responses and JSON logs.
+- New feature work uses the existing `api`, `config`, and `observability` packages.
+
+### Known Gaps Or Out Of Scope
+
+- No database migrations yet.
+- No persistent ingestion repository yet.
+- No `POST /ingestion/jobs` route yet.
+- No full metrics endpoint yet.
+- No OpenTelemetry exporter configuration yet.
+- No MCP Gateway runtime yet.
+- No LangGraph runtime yet.
+
+## Planned Checkpoint: Foundation Runtime Back To Feature Agents
+
+Date: 2026-05-11
+
+From agent: Foundation / DevOps Agent
+
+To agent: API / Workflow Agent, Ingestion / Backend Agent, MCP Gateway / Tooling Agent
+
+Status: `planned`
+
+### Trigger
+
+Start this checkpoint when a feature agent is ready to build on the Phase 0 runtime foundation.
+
+Minimum trigger conditions:
+
+- Phase 0 foundation artifacts are present.
+- `docs/phase_0_acceptance.md` records setup, health, Compose, and test evidence.
+- Local tests pass with `python3 -m pytest`.
+- Docker Compose config and startup have been verified at least once.
+- Feature work needs an API route, repository boundary, gateway component, or runtime integration.
+
+### Goal
+
+Use the Phase 0 foundation as the shared runtime baseline for Phase 1 and Phase 2 work without creating duplicate app, config, logging, Docker, or CI paths.
+
+### Suggested First Task
+
+Inspect `api/main.py`, `config/settings.py`, `observability/logging.py`, and `docs/phase_0_acceptance.md`, then add the next feature behind the existing package boundaries.
+
+### Acceptance Criteria
+
+- Feature work reuses the existing FastAPI app factory.
+- New runtime code preserves request ID propagation.
+- New tests run through the existing pytest configuration.
+- Docker Compose remains able to start API, PostgreSQL/pgvector, and Redis.
+- Any new known runtime gap is recorded in the relevant handoff or acceptance note.
+
+### Known Gaps Or Out Of Scope
+
+- Do not replace the Phase 0 app entry point without an explicit architecture decision.
+- Do not add a parallel Compose stack for feature work.
+- Do not introduce paid cloud dependencies for local development.
+- Do not implement large feature surfaces in this checkpoint; use it as a coordination return point.

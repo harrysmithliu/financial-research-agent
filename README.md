@@ -283,15 +283,7 @@ Financial outputs must preserve uncertainty, cite evidence where required, and i
 
 The implementation is expected to run locally through Docker Compose with API, PostgreSQL/pgvector, and Redis services.
 
-Planned setup flow:
-
-```bash
-cp .env.example .env
-docker compose up --build
-pytest
-```
-
-This repository currently contains requirements and project foundation documentation. Runtime commands will become available as the implementation phases add `pyproject.toml`, `docker-compose.yml`, application modules, and tests.
+Phase 0 local setup, Docker Compose startup, health check, test evidence, and known gaps are documented in [docs/phase_0_acceptance.md](docs/phase_0_acceptance.md).
 
 ## Implementation Phases
 

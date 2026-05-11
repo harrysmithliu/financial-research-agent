@@ -37,6 +37,7 @@ dev = [
 packages = [
     "agents",
     "api",
+    "api.routes",
     "config",
     "eval",
     "ingestion",
