@@ -4,6 +4,90 @@ MCP Financial Research Agent is a production-shaped financial research and platf
 
 The system is designed for local development and production-oriented service boundaries. It does **not** provide investment advice, does not use real client data, and keeps human review and responsible AI checks in the core workflow.
 
+## Product Vision
+
+This project transforms time-consuming fund research, evidence gathering, analysis, and report writing into a trusted AI-powered research workflow, helping financial researchers quickly generate evidence-backed, reviewable, and traceable insights so humans can focus on judgment while AI accelerates discovery.
+
+Expected visual result:
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ Financial Research Agent                                      Run ID: R-1024 │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Ask a research question                                                      │
+│ ┌──────────────────────────────────────────────────────────────────────────┐ │
+│ │ Compare Fund A and Fund B based on performance, risk, fees, and style.   │ │
+│ └──────────────────────────────────────────────────────────────────────────┘ │
+│ [Generate Research Brief]                                                    │
+├───────────────────────────────┬──────────────────────────────────────────────┤
+│ Agent Workflow                │ Research Output                              │
+│                               │                                              │
+│ ✓ Plan created                │ Fund A vs Fund B                             │
+│ ✓ Fund metrics retrieved      │                                              │
+│ ✓ Documents searched          │ Summary                                      │
+│ ✓ Citations selected          │ Fund A shows stronger recent performance,    │
+│ ✓ Guardrails passed           │ while Fund B has lower volatility and fees.  │
+│ ○ Human review pending        │                                              │
+│                               │ Metrics                                      │
+│ Tool Trace                    │ ┌──────────┬────────┬────────┬────────────┐  │
+│ - fund_metrics                │ │ Fund     │ Return │ Risk   │ Fee        │  │
+│ - document_retrieval          │ ├──────────┼────────┼────────┼────────────┤  │
+│ - citation_validator          │ │ Fund A   │ 8.2%   │ High   │ 0.72%      │  │
+│ - pii_filter                  │ │ Fund B   │ 6.9%   │ Medium │ 0.45%      │  │
+│ - moderation                  │ └──────────┴────────┴────────┴────────────┘  │
+│                               │                                              │
+│ Latency: 2.4s                 │ Key Evidence                                 │
+│ Cache hit rate: 67%           │ [1] Annual report, page 4                    │
+│                               │ [2] Fund factsheet, Q3 section               │
+├───────────────────────────────┴──────────────────────────────────────────────┤
+│ Responsible AI Review                                                        │
+│ PII: Passed | Moderation: Passed | Financial Advice Safety: Passed           │
+│ Citation Coverage: 92% | Faithfulness: Passed | Prompt Injection: Passed     │
+│                                                                              │
+│ Reviewer Decision: [Approve] [Request Changes] [Reject]                      │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+This view emphasizes the end-to-end research chain: a user question becomes an agent plan, MCP tool calls, cited evidence, guardrail checks, and a final human review decision.
+
+Product UI concept:
+
+```text
+┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ Financial Research Agent        Research Console   Evaluations    Runs    Settings       Search ⌘K   HL     │
+├────────────────────────┬──────────────────────────────────────────────────────────────┬─────────────────────┤
+│ New Research Run       │ Fund Comparison Brief                         Draft saved    │ Evidence & Controls │
+│                        │                                                              │                     │
+│ Task                   │ ┌──────────────────────────────────────────────────────────┐ │ Evidence Coverage   │
+│ ● Fund comparison      │ │ Compare Fund A and Fund B                                │ │ █████████░ 92%      │
+│ ○ Due diligence brief  │ │                                                          │ │                     │
+│ ○ Platform issue scan  │ │ Fund A has stronger three-year performance and higher    │ │ Cited Sources       │
+│                        │ │ volatility. Fund B appears more cost-efficient and may   │ │ [1] Annual report   │
+│ Funds                  │ │ fit lower-risk allocation screens.                       │ │ [2] Factsheet Q3    │
+│ [ Fund A        v ]    │ │                                                          │ │ [3] Risk summary    │
+│ [ Fund B        v ]    │ │ Key concerns                                             │ │                     │
+│                        │ │ - Fund A concentration risk increased in recent periods. │ │ MCP Tool Trace      │
+│ Question               │ │ - Fund B trails in upside capture during growth rallies. │ │ ✓ fund_metrics      │
+│ ┌───────────────────┐  │ │                                                          │ │ ✓ document_search   │
+│ │ Compare returns,  │  │ │ Analyst checklist                                        │ │ ✓ citation_check    │
+│ │ risk, fees, and   │  │ │ ✓ Performance reviewed  ✓ Fees reviewed  ○ Final signoff │ │ ✓ safety_review     │
+│ │ style exposure.   │  │ └──────────────────────────────────────────────────────────┘ │                     │
+│ └───────────────────┘  │                                                              │ Run Diagnostics     │
+│                        │ Metrics                                                      │ Request ID R-1024   │
+│ [Generate] [Reset]     │ ┌──────────┬──────────┬──────────┬──────────┬─────────────┐  │ Latency 2.4s        │
+│                        │ │ Fund     │3Y Return │Volatility│ Expense  │ Style       │  │ Cache hit 67%       │
+│ Recent Runs            │ ├──────────┼──────────┼──────────┼──────────┼─────────────┤  │ Guardrails passed   │
+│ R-1024  Pending        │ │ Fund A   │ 8.2%     │ High     │ 0.72%    │ Growth      │  │                     │
+│ R-1021  Approved       │ │ Fund B   │ 6.9%     │ Medium   │ 0.45%    │ Blend       │  │ Reviewer Action     │
+│ R-1017  Changes        │ └──────────┴──────────┴──────────┴──────────┴─────────────┘  │ [Approve]           │
+│                        │                                                              │ [Request Changes]   │
+│                        │ Responsible AI Review                                        │ [Reject]            │
+│                        │ PII Passed | Moderation Passed | Advice Safety Passed        │                     │
+└────────────────────────┴──────────────────────────────────────────────────────────────┴─────────────────────┘
+```
+
+This product-style view shows how the same workflow could appear in a real analyst console, with task setup on the left, the generated research brief in the center, and evidence, diagnostics, and approval controls on the right.
+
 ## Goals
 
 - Run a local financial research service with FastAPI, PostgreSQL/pgvector, Redis, and Docker Compose.
@@ -59,7 +143,7 @@ flowchart LR
 Suggested package layout:
 
 ```text
-mcp-financial-research-agent/
+financial-research-agent/
 |- agents/
 |- api/
 |- mcp_gateway/
