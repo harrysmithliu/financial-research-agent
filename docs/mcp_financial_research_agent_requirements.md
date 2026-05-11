@@ -427,10 +427,10 @@ Expected output:
 
 This scenario covers GitHub issue ingestion, MCP tool access, RAG over operational text, and production platform intelligence.
 
-## 9. Suggested System Architecture
+## 9. Package Layout
 
 ```text
-mcp-financial-research-agent/
+financial-research-agent/
 |
 |- agents/
 |  |- graph.py
