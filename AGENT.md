@@ -109,6 +109,7 @@ The project is executed by specialized development agents. Each agent owns a bou
 - Keep interfaces stable before expanding source coverage or model behavior.
 - Favor simple production-shaped components over throwaway scripts.
 - Before writing explanatory Markdown documents, agents must first state the document's purpose and intended audience, then ask the human which file name and directory are approved for writing.
+- The agent that initially creates a new Markdown document must sign it with the creating agent's role/name and creation timestamp.
 - Document acceptance evidence for each phase, including commands, sample requests, sample responses, logs, metrics, and known gaps.
 - Do not hide uncertainty. If a feature is incomplete, mark the gap explicitly in the phase report.
 

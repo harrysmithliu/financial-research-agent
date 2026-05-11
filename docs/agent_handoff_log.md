@@ -77,7 +77,7 @@ Data sources:
 
 Reference docs:
 
-- `docs/mcp_financial_research_agent_requirements.md`
+- `docs/financial_research_agent_requirements.md`
 - `docs/canonical_data_formats.md`
 - `data/README.md`
 
@@ -126,7 +126,7 @@ Implement loading and normalization for:
 
 ### Implementation Notes
 
-- Follow the package layout in `docs/mcp_financial_research_agent_requirements.md`.
+- Follow the package layout in `docs/financial_research_agent_requirements.md`.
 - Place database-facing models in `storage/models.py`.
 - Keep API schemas separate from storage models when API routes are added.
 - Do not pass raw source data directly to agent workflows.
