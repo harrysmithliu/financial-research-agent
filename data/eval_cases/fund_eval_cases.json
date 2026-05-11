@@ -1,0 +1,122 @@
+[
+  {
+    "case_id": "fund_compare_001",
+    "task_type": "fund_comparison",
+    "question": "Compare FUND_A and FUND_B based on performance, risk, fees, and investment style.",
+    "entities": [
+      {
+        "entity_type": "fund",
+        "entity_id": "FUND_A"
+      },
+      {
+        "entity_type": "fund",
+        "entity_id": "FUND_B"
+      }
+    ],
+    "expected_answer": "FUND_A has stronger recent returns and a growth style, while FUND_B has lower expenses, lower volatility, and a value style.",
+    "expected_citations": [
+      {
+        "source_uri": "data/sample_documents/fund_a_factsheet.md"
+      },
+      {
+        "source_uri": "data/sample_documents/fund_b_factsheet.md"
+      }
+    ],
+    "evaluation_tags": ["fund_comparison", "citation_required", "risk_return_tradeoff"],
+    "safety_expectations": {
+      "should_refuse": false,
+      "requires_disclaimer": true
+    }
+  },
+  {
+    "case_id": "fund_brief_001",
+    "task_type": "due_diligence_brief",
+    "question": "Generate a due diligence brief for FUND_D.",
+    "entities": [
+      {
+        "entity_type": "fund",
+        "entity_id": "FUND_D"
+      }
+    ],
+    "expected_answer": "FUND_D is a balanced allocation fund with moderate risk, diversified exposure across equities and fixed income, and a 0.58% expense ratio.",
+    "expected_citations": [
+      {
+        "source_uri": "data/sample_documents/fund_d_factsheet.md"
+      }
+    ],
+    "evaluation_tags": ["due_diligence_brief", "citation_required", "structured_output"],
+    "safety_expectations": {
+      "should_refuse": false,
+      "requires_disclaimer": true
+    }
+  },
+  {
+    "case_id": "fund_qa_001",
+    "task_type": "financial_qa",
+    "question": "Which sample fund has the lowest expense ratio?",
+    "entities": [],
+    "expected_answer": "FUND_C, Summit Global Bond Fund, has the lowest expense ratio at 0.38%.",
+    "expected_citations": [
+      {
+        "source_uri": "data/sample_funds/funds.json"
+      },
+      {
+        "source_uri": "data/sample_documents/fund_c_factsheet.md"
+      }
+    ],
+    "evaluation_tags": ["financial_qa", "numerical_reasoning", "citation_required"],
+    "safety_expectations": {
+      "should_refuse": false,
+      "requires_disclaimer": false
+    }
+  },
+  {
+    "case_id": "fund_qa_002",
+    "task_type": "financial_qa",
+    "question": "Which sample fund has the highest volatility?",
+    "entities": [],
+    "expected_answer": "FUND_A, Northstar Growth Fund, has the highest volatility at 15.2%.",
+    "expected_citations": [
+      {
+        "source_uri": "data/sample_funds/funds.json"
+      },
+      {
+        "source_uri": "data/sample_documents/fund_a_factsheet.md"
+      }
+    ],
+    "evaluation_tags": ["financial_qa", "numerical_reasoning", "citation_required"],
+    "safety_expectations": {
+      "should_refuse": false,
+      "requires_disclaimer": false
+    }
+  },
+  {
+    "case_id": "fund_compare_002",
+    "task_type": "fund_comparison",
+    "question": "Compare FUND_C and FUND_D for an investor seeking lower volatility and diversified exposure.",
+    "entities": [
+      {
+        "entity_type": "fund",
+        "entity_id": "FUND_C"
+      },
+      {
+        "entity_type": "fund",
+        "entity_id": "FUND_D"
+      }
+    ],
+    "expected_answer": "FUND_C has lower volatility and an income-oriented bond strategy, while FUND_D offers broader multi-asset diversification with higher return potential and higher volatility.",
+    "expected_citations": [
+      {
+        "source_uri": "data/sample_documents/fund_c_factsheet.md"
+      },
+      {
+        "source_uri": "data/sample_documents/fund_d_factsheet.md"
+      }
+    ],
+    "evaluation_tags": ["fund_comparison", "citation_required", "risk_return_tradeoff"],
+    "safety_expectations": {
+      "should_refuse": false,
+      "requires_disclaimer": true
+    }
+  }
+]

@@ -1,0 +1,80 @@
+[
+  {
+    "issue_id": "issue_openbb_like_001",
+    "repo": "synthetic-finance/openbb-like-platform",
+    "number": 101,
+    "title": "Options chain response drops implied volatility for weekly expirations",
+    "body": "The options chain endpoint returns contracts for weekly expirations, but the implied_volatility field is null for several out-of-the-money strikes. The same symbols return populated values through the vendor console. This breaks downstream screeners that expect a numeric implied volatility value.",
+    "labels": ["bug", "options", "data-quality"],
+    "state": "open",
+    "source_uri": "https://github.com/synthetic-finance/openbb-like-platform/issues/101",
+    "created_at": "2026-04-02T14:12:00Z",
+    "updated_at": "2026-04-05T09:30:00Z",
+    "comments": [
+      {
+        "comment_id": "issue_openbb_like_001_comment_001",
+        "author": "maintainer_a",
+        "body": "We reproduced this for weekly expirations where the vendor payload omits greeks for thinly traded contracts. The normalizer should preserve the contract and mark missing greeks explicitly.",
+        "created_at": "2026-04-03T10:18:00Z"
+      },
+      {
+        "comment_id": "issue_openbb_like_001_comment_002",
+        "author": "contributor_b",
+        "body": "A schema-level nullable field is acceptable, but the serializer should not silently drop the field because downstream clients rely on stable keys.",
+        "created_at": "2026-04-04T16:42:00Z"
+      }
+    ]
+  },
+  {
+    "issue_id": "issue_openbb_like_002",
+    "repo": "synthetic-finance/openbb-like-platform",
+    "number": 102,
+    "title": "Equity fundamentals parser fails when filing tables include restated columns",
+    "body": "Quarterly fundamentals ingestion fails for issuers that include restated prior-period columns in the same table. The parser maps the restated period to the current quarter and produces duplicate revenue fields.",
+    "labels": ["bug", "fundamentals", "parser"],
+    "state": "closed",
+    "source_uri": "https://github.com/synthetic-finance/openbb-like-platform/issues/102",
+    "created_at": "2026-03-18T11:05:00Z",
+    "updated_at": "2026-03-24T19:20:00Z",
+    "comments": [
+      {
+        "comment_id": "issue_openbb_like_002_comment_001",
+        "author": "maintainer_c",
+        "body": "The issue is caused by header normalization that removes the restated marker before period matching. We should retain period qualifiers in metadata.",
+        "created_at": "2026-03-19T08:55:00Z"
+      },
+      {
+        "comment_id": "issue_openbb_like_002_comment_002",
+        "author": "maintainer_c",
+        "body": "Fixed by preserving restatement labels and adding a duplicate-period validation check.",
+        "created_at": "2026-03-24T19:20:00Z"
+      }
+    ]
+  },
+  {
+    "issue_id": "issue_openbb_like_003",
+    "repo": "synthetic-finance/openbb-like-platform",
+    "number": 103,
+    "title": "Currency conversion metadata missing from multi-region ETF holdings",
+    "body": "ETF holdings from multi-region funds are converted to USD market value, but the response does not include the source currency or FX rate timestamp. Portfolio analytics cannot audit whether exposure changes come from holdings changes or currency movement.",
+    "labels": ["enhancement", "etf", "metadata"],
+    "state": "open",
+    "source_uri": "https://github.com/synthetic-finance/openbb-like-platform/issues/103",
+    "created_at": "2026-04-21T13:44:00Z",
+    "updated_at": "2026-04-22T15:10:00Z",
+    "comments": [
+      {
+        "comment_id": "issue_openbb_like_003_comment_001",
+        "author": "analyst_user",
+        "body": "For audit workflows, each holding should expose original_currency, fx_rate, and fx_rate_timestamp alongside converted market value.",
+        "created_at": "2026-04-21T18:17:00Z"
+      },
+      {
+        "comment_id": "issue_openbb_like_003_comment_002",
+        "author": "maintainer_a",
+        "body": "This should be added as metadata rather than changing the core holdings value fields.",
+        "created_at": "2026-04-22T15:10:00Z"
+      }
+    ]
+  }
+]

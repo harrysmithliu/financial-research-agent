@@ -38,6 +38,20 @@
       "source_uri": "data/sample_documents/fund_d_factsheet.md",
       "content_type": "document",
       "fund_id": "FUND_D"
+    },
+    {
+      "source_id": "synthetic_platform_issues",
+      "source_type": "github_issues",
+      "source_uri": "data/sample_issues/issues.json",
+      "content_type": "structured_records",
+      "record_type": "github_issue"
+    },
+    {
+      "source_id": "fund_eval_cases",
+      "source_type": "sample_dataset",
+      "source_uri": "data/eval_cases/fund_eval_cases.json",
+      "content_type": "eval_cases",
+      "record_type": "eval_case"
     }
   ]
 }
