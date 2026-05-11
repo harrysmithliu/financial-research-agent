@@ -52,6 +52,17 @@
       "source_uri": "data/eval_cases/fund_eval_cases.json",
       "content_type": "eval_cases",
       "record_type": "eval_case"
+    },
+    {
+      "source_id": "finagent_benchmark_sample",
+      "source_type": "sample_dataset",
+      "source_uri": "data/external/finagent_benchmark_sample.json",
+      "content_type": "eval_cases",
+      "record_type": "eval_case",
+      "dataset_name": "Guen/finagent-benchmark",
+      "source_dataset_url": "https://huggingface.co/datasets/Guen/finagent-benchmark",
+      "license": "MIT",
+      "sample_size": 5
     }
   ]
 }

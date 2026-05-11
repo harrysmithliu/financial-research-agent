@@ -19,6 +19,8 @@ Current dataset:
 ```text
 data/
 |- manifest.json
+|- external/
+|  `- finagent_benchmark_sample.json
 |- sample_funds/
 |  `- funds.json
 |- sample_documents/
@@ -68,6 +70,41 @@ Repeatable evaluation cases for fund comparison, due diligence brief generation,
 Expected normalized output:
 
 - `EvalCase`
+
+### `external/finagent_benchmark_sample.json`
+
+Small external evaluation sample derived from FinAgent Benchmark.
+
+Source:
+
+- Dataset: `Guen/finagent-benchmark`
+- URL: `https://huggingface.co/datasets/Guen/finagent-benchmark`
+- License: MIT
+- Retrieved: `2026-05-11`
+- Raw local snapshot: `data/external/raw/finagent-benchmark/`
+- Raw source file: `benchmark_questions.json`
+- Full raw dataset size: 133 benchmark questions
+- Curated sample size: 5 eval cases
+
+Selection method:
+
+- One fact extraction case: `FE_001`
+- One numerical reasoning case: `NR_001`
+- One temporal reasoning case: `TR_001`
+- One multi-hop comparison case: `MH_001`
+- One adversarial not-available case: `ADV_001`
+
+The raw snapshot directory is intentionally gitignored. The tracked sample file keeps only a small, manually inspectable slice and maps each selected source record into the local `EvalCase` shape.
+
+Expected normalized output:
+
+- `EvalCase`
+
+Notes:
+
+- Source filing material is based on public SEC EDGAR filings.
+- The sample does not contain real client data.
+- The sample should be used for evaluation and regression testing, not investment advice.
 
 ## Canonical Formats
 

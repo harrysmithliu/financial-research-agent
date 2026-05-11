@@ -37,6 +37,7 @@ pip-wheel-metadata/
 # Local data and generated outputs
 intern/
 data/raw/
+data/external/raw/
 data/processed/
 data/runtime/
 data/uploads/

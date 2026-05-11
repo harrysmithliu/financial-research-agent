@@ -6,20 +6,24 @@ This document is the shared handoff log for all agents working on MCP Financial 
 
 All agents should treat this file as durable project memory for cross-agent handoffs.
 
-When an agent finishes a bounded phase or hands work to another agent, append a new dated handoff entry in chronological order. Do not delete or rewrite completed handoff entries unless the user explicitly asks for cleanup.
+When an agent finishes a bounded phase or hands work to another agent, add a new UTC-timestamped handoff entry. Do not delete or rewrite completed handoff entries unless the user explicitly asks for cleanup.
 
 Completed handoffs and planned future checkpoints use different heading formats:
 
-- Completed handoff: `## Handoff YYYY-MM-DD-A: Short Title`
+- Completed handoff: `## Handoff YYYY-MM-DD-HHMMZ: Short Title`
 - Planned future checkpoint: `## Planned Checkpoint: Short Title`
 
-Only completed handoffs receive dated sequence suffixes such as `A`, `B`, or `C`. Planned checkpoints do not receive sequence numbers and do not reserve a position in the completed handoff history.
+Completed handoffs use the real UTC handoff time in the heading. `HHMMZ` is the 24-hour UTC hour and minute, and `Z` means UTC. Planned checkpoints do not receive timestamps and do not reserve a completed-handoff sequence number.
 
 Write a planned checkpoint when a future return point is already known but the current agent is not ready to hand off completed work yet. Planned checkpoints are especially useful for cross-agent loops, such as external data expansion returning to ingestion, or canonical ingestion returning later for storage persistence.
 
-Place planned checkpoints immediately after the completed handoff that creates or explains the future return point. Keep them in expected workflow order. If a new completed handoff occurs before a planned checkpoint becomes active, insert the completed handoff in chronological order without renumbering previous completed handoffs, and keep the planned checkpoint near the handoff it logically follows.
+Place planned checkpoints immediately after the completed handoff that creates or explains the future return point. Keep planned checkpoints near the workflow they belong to, not at the end of the file.
 
-When a planned checkpoint becomes active, either convert it into a completed handoff using that day's dated heading, or create a new completed handoff that explicitly references the planned checkpoint. Do not leave an active checkpoint marked as `planned` after the handoff is complete.
+When a planned checkpoint becomes active, replace that planned checkpoint in place with the completed handoff, using the real UTC timestamp in the heading. This is the default behavior and prevents related handoffs from drifting to the end of the document.
+
+If replacing the planned checkpoint in place would obscure important context, create the completed handoff immediately next to the planned checkpoint and mark the planned checkpoint as superseded. Do not leave an active checkpoint marked only as `planned` after the handoff is complete.
+
+The document is organized by workflow adjacency first and timestamp second. A completed handoff may appear next to the planned checkpoint it activates even if another independent workflow has an earlier or later timestamp elsewhere in the document. Do not move a handoff to the end of the file just because it happened most recently.
 
 Each handoff entry should include:
 
@@ -46,9 +50,9 @@ Each planned checkpoint should include:
 
 Agents should keep this document concise but operational. The next agent should be able to start work from the latest relevant entry without reconstructing context from chat history.
 
-## Handoff 2026-05-11-A: Data Seed To Ingestion
+## Handoff 2026-05-11-1347Z: Data Seed To Ingestion
 
-Date: 2026-05-11
+Date: 2026-05-11T13:47Z
 
 From agent: Data Engineering Agent
 
@@ -168,9 +172,9 @@ Start with deterministic tests around:
 
 These should follow after the local normalization path is stable.
 
-## Handoff 2026-05-11-B: Ingestion Stable To External Data Expansion
+## Handoff 2026-05-11-1910Z: Ingestion Stable To External Data Expansion
 
-Date: 2026-05-11
+Date: 2026-05-11T19:10Z
 
 From agent: Ingestion / Backend Agent
 
@@ -311,50 +315,110 @@ Out of scope for the next Data Engineering Agent:
 - LangGraph workflow execution
 - MCP Gateway and MCP tools
 
-## Planned Checkpoint: External Data Expansion Back To Ingestion
+## Handoff 2026-05-11-2325Z: External Data Expansion Back To Ingestion
 
-Date: 2026-05-11
+Date: 2026-05-11T23:25Z
 
 From agent: Data Engineering Agent
 
 To agent: Ingestion / Backend Agent
 
-Status: `planned`
-
-### Trigger
-
-Start this handoff after the Data Engineering Agent has added a small, curated external dataset batch.
-
-Minimum trigger conditions:
-
-- New external sample files are present in `data/`.
-- `data/manifest.json` lists each new external source.
-- `data/README.md` documents source provenance, sample size, licensing notes, and replacement path.
-- External samples are small enough for manual review.
-- No real client data, credentials, live trading data, or unsafe investment advice has been introduced.
+Status: `ready`
 
 ### Goal
 
-Adapt and harden the ingestion normalization layer so external samples pass through the same canonical contract as the local synthetic seed dataset.
+Adapt and harden the ingestion normalization layer for the first external Hugging Face sample while keeping the existing synthetic seed ingestion stable.
+
+### Completed Data Expansion Work
+
+Added a tiny curated sample from FinAgent Benchmark:
+
+- Source dataset: `Guen/finagent-benchmark`
+- Source URL: `https://huggingface.co/datasets/Guen/finagent-benchmark`
+- License: MIT
+- Raw local snapshot: `data/external/raw/finagent-benchmark/`
+- Raw source file: `benchmark_questions.json`
+- Full raw dataset size: 133 benchmark questions
+- Tracked curated sample: `data/external/finagent_benchmark_sample.json`
+- Curated sample size: 5 eval cases
+
+Selected source records:
+
+- `FE_001`: fact extraction
+- `NR_001`: numerical reasoning
+- `TR_001`: temporal reasoning
+- `MH_001`: multi-hop comparison
+- `ADV_001`: adversarial not-available case
+
+Additional artifacts:
+
+- `docs/external_data_source_selection.md`
+- `scripts/download_finagent_benchmark.py`
+- `.gitignore` now ignores `data/external/raw/`
+- `data/manifest.json` registers `finagent_benchmark_sample`
+- `data/README.md` documents provenance, license, sample size, and selection method
+
+### Verification Evidence
+
+Validated JSON:
+
+```bash
+python3 -m json.tool data/external/finagent_benchmark_sample.json
+python3 -m json.tool data/manifest.json
+```
+
+Verified the existing ingestion entry point can load the new sample without backend changes:
+
+```bash
+python3 - <<'PY'
+from ingestion.jobs import load_seed_dataset
+result = load_seed_dataset('.')
+print('documents', len(result.documents))
+print('structured_records', len(result.structured_records))
+print('eval_cases', len(result.eval_cases))
+print([case.case_id for case in result.eval_cases])
+PY
+```
+
+Latest observed result:
+
+```text
+documents 13
+structured_records 7
+eval_cases 10
+['fund_compare_001', 'fund_brief_001', 'fund_qa_001', 'fund_qa_002', 'fund_compare_002', 'finagent_FE_001', 'finagent_NR_001', 'finagent_TR_001', 'finagent_MH_001', 'finagent_ADV_001']
+```
 
 ### Suggested First Task
 
-Run the existing ingestion test suite, inspect the new manifest entries, and identify whether each new source can map to existing `Document`, `StructuredRecord`, or `EvalCase` models without schema changes.
+Add deterministic ingestion tests for the external FinAgent sample.
+
+Focus first on:
+
+- manifest parsing of `finagent_benchmark_sample`
+- normalization into five `EvalCase` items
+- preservation of external provenance fields
+- adversarial `NOT_AVAILABLE` expected-answer behavior
+- duplicate or missing citation detection if a data quality helper already exists
 
 ### Acceptance Criteria
 
-- New external sources normalize through the manifest-driven ingestion path.
-- Any new source type or record type has deterministic normalizer coverage.
-- Tests cover successful normalization and at least one malformed external sample path.
+This handoff is complete when:
+
 - Existing synthetic seed ingestion remains stable.
-- Canonical fields required for citation, audit, filtering, and evaluation are preserved.
+- The FinAgent sample is covered by deterministic normalizer or ingestion tests.
+- Any decision about `source_metadata` preservation is reflected in code or explicitly documented.
+- Any decision about adding a dedicated `huggingface_dataset` `source_type` is either implemented or deferred with rationale.
+- `python3 -m pytest` passes.
 
 ### Known Gaps Or Out Of Scope
 
-- Do not add PostgreSQL persistence in this checkpoint unless explicitly directed.
-- Do not start large-scale crawling or dataset mirroring.
-- Do not introduce paid cloud dependencies.
-- Keep external sample handling small, reviewable, and reversible.
+- The raw Hugging Face snapshot is intentionally not tracked in git.
+- `source_metadata` in the tracked sample is currently accepted by the raw JSON shape but not preserved by the current `EvalCase` dataclass.
+- The manifest uses supported `source_type: sample_dataset`; a dedicated `huggingface_dataset` source type can be considered by ingestion/backend later.
+- Do not add PostgreSQL persistence in this handoff unless explicitly directed.
+- Do not start large-scale Hugging Face mirroring.
+- Do not add TAT-QA yet; prove the first external sample path first.
 
 ## Planned Checkpoint: Canonical Ingestion To Storage Persistence
 
@@ -398,9 +462,9 @@ Design the repository boundary between canonical ingestion outputs and storage m
 - Do not generate embeddings or build pgvector indexes before document chunking behavior is agreed.
 - Do not implement MCP Gateway, LangGraph workflows, or research answer generation in this checkpoint.
 
-## Handoff 2026-05-11-C: Phase 0 Runtime Foundation
+## Handoff 2026-05-11-2041Z: Phase 0 Runtime Foundation
 
-Date: 2026-05-11
+Date: 2026-05-11T20:41Z
 
 From agent: Foundation / DevOps Agent
 

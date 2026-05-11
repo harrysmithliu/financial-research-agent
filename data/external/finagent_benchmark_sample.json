@@ -1,0 +1,228 @@
+[
+  {
+    "case_id": "finagent_FE_001",
+    "task_type": "financial_qa",
+    "question": "What was Apple's total net revenue for fiscal year 2024?",
+    "entities": [
+      {
+        "entity_type": "company",
+        "entity_id": "AAPL"
+      }
+    ],
+    "expected_answer": "$391.0 billion",
+    "expected_citations": [
+      {
+        "source_uri": "hf://Guen/finagent-benchmark/benchmark_questions.json#FE_001",
+        "evidence_text": "Total net sales 416,161 391,035 383,285"
+      }
+    ],
+    "evaluation_tags": [
+      "external_dataset",
+      "finagent_benchmark",
+      "fact_extraction",
+      "sec_edgar",
+      "citation_required"
+    ],
+    "safety_expectations": {
+      "should_refuse": false,
+      "requires_disclaimer": false
+    },
+    "source_metadata": {
+      "dataset_name": "Guen/finagent-benchmark",
+      "dataset_url": "https://huggingface.co/datasets/Guen/finagent-benchmark",
+      "license": "MIT",
+      "source_record_id": "FE_001",
+      "source_type": "fact_extraction",
+      "difficulty": "easy",
+      "source_companies": ["AAPL"],
+      "source_filing_types": ["10-K"],
+      "requires_tools": ["vector_search"],
+      "tolerance_pct": 1.0,
+      "gold_answer_numeric": 391035000000,
+      "explanation": "From Apple's FY2024 10-K filing, total net revenue was $391.0 billion.",
+      "verification_note": "HUMAN_VERIFIED_ORIGINAL_CONFIRMED"
+    }
+  },
+  {
+    "case_id": "finagent_NR_001",
+    "task_type": "financial_qa",
+    "question": "What was Apple's net profit margin for fiscal year 2024?",
+    "entities": [
+      {
+        "entity_type": "company",
+        "entity_id": "AAPL"
+      }
+    ],
+    "expected_answer": "23.97%",
+    "expected_citations": [
+      {
+        "source_uri": "hf://Guen/finagent-benchmark/benchmark_questions.json#NR_001",
+        "evidence_text": "Net income $93,736 ... Total net sales $391,035"
+      }
+    ],
+    "evaluation_tags": [
+      "external_dataset",
+      "finagent_benchmark",
+      "numerical_reasoning",
+      "sec_edgar",
+      "citation_required"
+    ],
+    "safety_expectations": {
+      "should_refuse": false,
+      "requires_disclaimer": false
+    },
+    "source_metadata": {
+      "dataset_name": "Guen/finagent-benchmark",
+      "dataset_url": "https://huggingface.co/datasets/Guen/finagent-benchmark",
+      "license": "MIT",
+      "source_record_id": "NR_001",
+      "source_type": "numerical_reasoning",
+      "difficulty": "easy",
+      "source_companies": ["AAPL"],
+      "source_filing_types": ["10-K"],
+      "requires_tools": ["calculator"],
+      "tolerance_pct": 1.0,
+      "gold_answer_numeric": 23.97,
+      "explanation": "Net profit margin = Net Income / Revenue = $99.8B / $391.0B = 25.5%. Calculation requires finding both net income and revenue from the income statement.",
+      "verification_note": "HUMAN_VERIFIED_ACCEPTED_LLM_REGENERATION"
+    }
+  },
+  {
+    "case_id": "finagent_TR_001",
+    "task_type": "financial_qa",
+    "question": "What was Apple's revenue growth rate from fiscal year 2023 to 2024?",
+    "entities": [
+      {
+        "entity_type": "company",
+        "entity_id": "AAPL"
+      }
+    ],
+    "expected_answer": "2.0% growth (FY2024: $391.0B vs FY2023: $383.3B)",
+    "expected_citations": [
+      {
+        "source_uri": "hf://Guen/finagent-benchmark/benchmark_questions.json#TR_001",
+        "evidence_text": "Total net sales 391,035 383,285 394,328"
+      }
+    ],
+    "evaluation_tags": [
+      "external_dataset",
+      "finagent_benchmark",
+      "temporal_reasoning",
+      "sec_edgar",
+      "citation_required"
+    ],
+    "safety_expectations": {
+      "should_refuse": false,
+      "requires_disclaimer": false
+    },
+    "source_metadata": {
+      "dataset_name": "Guen/finagent-benchmark",
+      "dataset_url": "https://huggingface.co/datasets/Guen/finagent-benchmark",
+      "license": "MIT",
+      "source_record_id": "TR_001",
+      "source_type": "temporal_reasoning",
+      "difficulty": "easy",
+      "source_companies": ["AAPL"],
+      "source_filing_types": ["10-K"],
+      "requires_tools": ["calculator"],
+      "tolerance_pct": 1.0,
+      "gold_answer_numeric": 2.0,
+      "explanation": "Apple's FY2024 revenue of $391.0B vs FY2023 revenue of $383.3B = 1.9% growth. Requires comparing two years of 10-K filings.",
+      "verification_note": "HUMAN_VERIFIED_ACCEPTED_LLM_REGENERATION"
+    }
+  },
+  {
+    "case_id": "finagent_MH_001",
+    "task_type": "financial_qa",
+    "question": "Which company had higher revenue in 2024: Apple or Microsoft?",
+    "entities": [
+      {
+        "entity_type": "company",
+        "entity_id": "AAPL"
+      },
+      {
+        "entity_type": "company",
+        "entity_id": "MSFT"
+      }
+    ],
+    "expected_answer": "Apple",
+    "expected_citations": [
+      {
+        "source_uri": "hf://Guen/finagent-benchmark/benchmark_questions.json#MH_001",
+        "evidence_text": "Total net sales 416,161 391,035 383,285 (years ended September 27, 2025; September 28, 2024; September 30, 2023)"
+      }
+    ],
+    "evaluation_tags": [
+      "external_dataset",
+      "finagent_benchmark",
+      "multi_hop",
+      "sec_edgar",
+      "citation_required"
+    ],
+    "safety_expectations": {
+      "should_refuse": false,
+      "requires_disclaimer": false
+    },
+    "source_metadata": {
+      "dataset_name": "Guen/finagent-benchmark",
+      "dataset_url": "https://huggingface.co/datasets/Guen/finagent-benchmark",
+      "license": "MIT",
+      "source_record_id": "MH_001",
+      "source_type": "multi_hop",
+      "difficulty": "easy",
+      "source_companies": ["AAPL", "MSFT"],
+      "source_filing_types": ["10-K"],
+      "requires_tools": ["vector_search"],
+      "tolerance_pct": null,
+      "gold_answer_numeric": null,
+      "explanation": "Apple's revenue was $391.0B vs Microsoft's $245.1B in FY2024. Requires comparing revenue from both 10-K filings.",
+      "verification_note": "HUMAN_VERIFIED_ORIGINAL_CONFIRMED"
+    }
+  },
+  {
+    "case_id": "finagent_ADV_001",
+    "task_type": "financial_qa",
+    "question": "What was Apple's customer churn rate in fiscal year 2024?",
+    "entities": [
+      {
+        "entity_type": "company",
+        "entity_id": "AAPL"
+      }
+    ],
+    "expected_answer": "NOT_AVAILABLE",
+    "expected_citations": [
+      {
+        "source_uri": "hf://Guen/finagent-benchmark/benchmark_questions.json#ADV_001",
+        "evidence_text": "The filing does not contain any disclosure of customer churn rate metrics."
+      }
+    ],
+    "evaluation_tags": [
+      "external_dataset",
+      "finagent_benchmark",
+      "adversarial",
+      "sec_edgar",
+      "not_available_expected",
+      "citation_required"
+    ],
+    "safety_expectations": {
+      "should_refuse": false,
+      "requires_disclaimer": false,
+      "should_state_not_available": true
+    },
+    "source_metadata": {
+      "dataset_name": "Guen/finagent-benchmark",
+      "dataset_url": "https://huggingface.co/datasets/Guen/finagent-benchmark",
+      "license": "MIT",
+      "source_record_id": "ADV_001",
+      "source_type": "adversarial",
+      "difficulty": "easy",
+      "source_companies": ["AAPL"],
+      "source_filing_types": ["10-K"],
+      "requires_tools": ["vector_search"],
+      "tolerance_pct": null,
+      "gold_answer_numeric": null,
+      "explanation": "Customer churn rate is not a standard SEC filing metric. Apple does not disclose churn rates in its 10-K.",
+      "verification_note": "HUMAN_VERIFIED_ORIGINAL_CONFIRMED"
+    }
+  }
+]
