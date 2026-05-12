@@ -8,42 +8,49 @@ All agents should treat this file as durable project memory for cross-agent hand
 
 When an agent finishes a bounded phase or hands work to another agent, add a new UTC-timestamped handoff entry. Do not delete or rewrite completed handoff entries unless the user explicitly asks for cleanup.
 
-Completed handoffs and planned future checkpoints use different heading formats:
+Completed handoffs use this top-level heading format:
 
-- Completed handoff: `## Handoff YYYY-MM-DD-HHMMZ: Short Title`
-- Planned future checkpoint: `## Planned Checkpoint: Short Title`
+- `## Handoff YYYY-MM-DD-HHMMZ: Short Title`
 
-Completed handoffs use the real UTC handoff time in the heading. `HHMMZ` is the 24-hour UTC hour and minute, and `Z` means UTC. Planned checkpoints do not receive timestamps and do not reserve a completed-handoff sequence number.
+`HHMMZ` is the 24-hour UTC hour and minute, and `Z` means UTC. For completed handoffs, the heading timestamp is the actual handoff time.
 
-Write a planned checkpoint when a future return point is already known but the current agent is not ready to hand off completed work yet. Planned checkpoints are especially useful for cross-agent loops, such as external data expansion returning to ingestion, or canonical ingestion returning later for storage persistence.
+Top-level handoff sections must be ordered strictly by their heading timestamps from earliest to latest. A top-level `## Handoff ...` section represents an actual completed handoff, not a future task placeholder.
 
-Place planned checkpoints immediately after the completed handoff that creates or explains the future return point. Keep planned checkpoints near the workflow they belong to, not at the end of the file.
+Planned checkpoints are optional and are not top-level sections. Do not add a planned checkpoint unless there is a clear expected return point; prefer keeping the task flow linear when no explicit return is needed.
 
-When a planned checkpoint becomes active, replace that planned checkpoint in place with the completed handoff, using the real UTC timestamp in the heading. This is the default behavior and prevents related handoffs from drifting to the end of the document.
+When Agent A completes work and hands the next task to Agent B, Agent A creates a top-level `## Handoff ...` entry. If Agent A expects the work to return later, Agent A may add a nested planned checkpoint under that same handoff:
 
-If replacing the planned checkpoint in place would obscure important context, create the completed handoff immediately next to the planned checkpoint and mark the planned checkpoint as superseded. Do not leave an active checkpoint marked only as `planned` after the handoff is complete.
+```markdown
+### Planned Checkpoint: Short Title
 
-The document is organized by workflow adjacency first and timestamp second. A completed handoff may appear next to the planned checkpoint it activates even if another independent workflow has an earlier or later timestamp elsewhere in the document. Do not move a handoff to the end of the file just because it happened most recently.
+Return To: Agent / Role
+
+Status: `planned`
+
+Trigger:
+
+Goal:
+
+Suggested First Task:
+
+Acceptance Criteria:
+
+Known Gaps Or Out Of Scope:
+```
+
+The nested planned checkpoint should follow this format and describe the future work owner, trigger conditions, goal, suggested first task, acceptance criteria, and known gaps or out-of-scope work.
+
+When Agent B completes the returned work, Agent B must not edit Agent A's original planned checkpoint directly. Instead, Agent B creates a new top-level `## Handoff YYYY-MM-DD-HHMMZ: Short Title` entry using the actual handoff time and references the originating planned checkpoint when applicable.
+
+When Agent A later reads the handoff log and confirms that the new top-level handoff satisfies its nested planned checkpoint, Agent A removes the fulfilled planned checkpoint from the original handoff and proceeds from the new handoff.
 
 Each handoff entry should include:
 
-- from agent or role
-- to agent or role
+- from role
+- to role
 - handoff status: `ready`, `blocked`, or `planned`
 - goal for the next agent
 - input artifacts and reference docs
-- suggested first task
-- acceptance criteria
-- known gaps or out-of-scope work
-
-Each planned checkpoint should include:
-
-- date
-- from agent or role
-- to agent or role
-- status: `planned`
-- trigger conditions
-- goal
 - suggested first task
 - acceptance criteria
 - known gaps or out-of-scope work
@@ -52,11 +59,9 @@ Agents should keep this document concise but operational. The next agent should 
 
 ## Handoff 2026-05-11-1347Z: Data Seed To Ingestion
 
-Date: 2026-05-11T13:47Z
+From: Data Engineering Agent
 
-From agent: Data Engineering Agent
-
-To agent: Ingestion / Backend Agent
+To: Ingestion / Backend Agent
 
 Status: `ready`
 
@@ -174,11 +179,9 @@ These should follow after the local normalization path is stable.
 
 ## Handoff 2026-05-11-1910Z: Ingestion Stable To External Data Expansion
 
-Date: 2026-05-11T19:10Z
+From: Ingestion / Backend Agent
 
-From agent: Ingestion / Backend Agent
-
-To agent: Data Engineering Agent
+To: Data Engineering Agent
 
 Status: `ready`
 
@@ -315,13 +318,186 @@ Out of scope for the next Data Engineering Agent:
 - LangGraph workflow execution
 - MCP Gateway and MCP tools
 
+### Planned Checkpoint: Canonical Ingestion To Storage Persistence
+
+Return To: Ingestion / Backend Agent
+
+Status: `planned`
+
+### Trigger
+
+Start this checkpoint after local and first external sample normalization are stable enough that schema churn is low.
+
+Minimum trigger conditions:
+
+- Synthetic seed ingestion passes end to end.
+- First external sample batch normalizes through the same ingestion path.
+- Canonical `Document`, `StructuredRecord`, and `EvalCase` fields are stable.
+- Data quality checks cover missing fields, duplicate source identifiers, broken citations, and unsupported task types.
+
+### Goal
+
+Move from in-memory canonical normalization toward durable ingestion storage while preserving auditability and replay.
+
+### Suggested First Task
+
+Design the repository boundary between canonical ingestion outputs and storage models before adding database writes.
+
+### Acceptance Criteria
+
+- Canonical objects can be mapped to planned PostgreSQL entities without losing citation or audit metadata.
+- Ingestion job records include source identifiers, dataset name, counts, status, errors, and timestamps.
+- Storage work remains testable locally and does not require an LLM provider.
+- PostgreSQL/pgvector integration is introduced behind clear repository or indexer interfaces.
+
+### Known Gaps Or Out Of Scope
+
+- Do not wire the full `POST /ingestion/jobs` API until the repository boundary is clear.
+- Do not generate embeddings or build pgvector indexes before document chunking behavior is agreed.
+- Do not implement MCP Gateway, LangGraph workflows, or research answer generation in this checkpoint.
+
+## Handoff 2026-05-11-2041Z: Phase 0 Runtime Foundation
+
+From: Foundation / DevOps Agent
+
+To: API / Workflow Agent, Ingestion / Backend Agent, MCP Gateway / Tooling Agent
+
+Status: `ready`
+
+### Goal
+
+Provide the Phase 0 local runtime foundation so feature agents can build on a runnable, testable, Docker-backed service baseline.
+
+### Completed Foundation Work
+
+Implemented foundation artifacts:
+
+- `pyproject.toml`
+- `.env.example`
+- `.dockerignore`
+- `Dockerfile`
+- `docker-compose.yml`
+- `.github/workflows/ci.yml`
+- `api/main.py`
+- `api/middleware.py`
+- `api/routes/health.py`
+- `config/settings.py`
+- `observability/logging.py`
+- `observability/request_context.py`
+- `infra/docker/postgres/init/001_enable_pgvector.sql`
+- `docs/phase_0_acceptance.md`
+
+### Verification Evidence
+
+Detailed evidence is recorded in `docs/phase_0_acceptance.md`.
+
+Verified locally:
+
+```bash
+python3 -m pytest
+```
+
+Latest verified result:
+
+```text
+34 passed
+```
+
+Verified Docker Compose:
+
+```bash
+docker compose config
+docker compose up --build -d
+docker compose exec -T api python -c "from urllib.request import urlopen; print(urlopen('http://127.0.0.1:8000/health', timeout=2).read().decode())"
+docker compose down
+```
+
+Observed API, PostgreSQL/pgvector, and Redis services as healthy during the Compose run.
+
+### Suggested First Task
+
+The next feature agent should use the Phase 0 runtime foundation rather than adding a parallel app or service entry point.
+
+For API / Workflow Agent:
+
+- Add route skeletons behind the existing FastAPI app factory.
+- Keep request ID propagation and JSON logging intact.
+
+For Ingestion / Backend Agent:
+
+- Begin repository boundary design before database writes.
+- Keep in-memory ingestion tests stable while introducing persistence.
+
+For MCP Gateway / Tooling Agent:
+
+- Use the existing settings, logging, and request context modules when introducing gateway routing.
+
+### Acceptance Criteria
+
+This handoff is complete when:
+
+- Future agents can run `python3 -m pytest` from the repository root.
+- Future agents can start the local service stack through Docker Compose.
+- `GET /health` remains lightweight and stable.
+- Request IDs continue to appear in health responses and JSON logs.
+- New feature work uses the existing `api`, `config`, and `observability` packages.
+
+### Known Gaps Or Out Of Scope
+
+- No database migrations yet.
+- No persistent ingestion repository yet.
+- No `POST /ingestion/jobs` route yet.
+- No full metrics endpoint yet.
+- No OpenTelemetry exporter configuration yet.
+- No MCP Gateway runtime yet.
+- No LangGraph runtime yet.
+
+### Planned Checkpoint: Foundation Runtime Back To Feature Agents
+
+Return To: API / Workflow Agent, Ingestion / Backend Agent, MCP Gateway / Tooling Agent
+
+Status: `planned`
+
+#### Trigger
+
+Start this checkpoint when a feature agent is ready to build on the Phase 0 runtime foundation.
+
+Minimum trigger conditions:
+
+- Phase 0 foundation artifacts are present.
+- `docs/phase_0_acceptance.md` records setup, health, Compose, and test evidence.
+- Local tests pass with `python3 -m pytest`.
+- Docker Compose config and startup have been verified at least once.
+- Feature work needs an API route, repository boundary, gateway component, or runtime integration.
+
+#### Goal
+
+Use the Phase 0 foundation as the shared runtime baseline for Phase 1 and Phase 2 work without creating duplicate app, config, logging, Docker, or CI paths.
+
+#### Suggested First Task
+
+Inspect `api/main.py`, `config/settings.py`, `observability/logging.py`, and `docs/phase_0_acceptance.md`, then add the next feature behind the existing package boundaries.
+
+#### Acceptance Criteria
+
+- Feature work reuses the existing FastAPI app factory.
+- New runtime code preserves request ID propagation.
+- New tests run through the existing pytest configuration.
+- Docker Compose remains able to start API, PostgreSQL/pgvector, and Redis.
+- Any new known runtime gap is recorded in the relevant handoff or acceptance note.
+
+#### Known Gaps Or Out Of Scope
+
+- Do not replace the Phase 0 app entry point without an explicit architecture decision.
+- Do not add a parallel Compose stack for feature work.
+- Do not introduce paid cloud dependencies for local development.
+- Do not implement large feature surfaces in this checkpoint; use it as a coordination return point.
+
 ## Handoff 2026-05-11-2325Z: External Data Expansion Back To Ingestion
 
-Date: 2026-05-11T23:25Z
+From: Data Engineering Agent
 
-From agent: Data Engineering Agent
-
-To agent: Ingestion / Backend Agent
+To: Ingestion / Backend Agent
 
 Status: `ready`
 
@@ -423,11 +599,9 @@ This handoff is complete when:
 
 ## Handoff 2026-05-12-1858Z: FinAgent Ingestion Hardening Complete
 
-Date: 2026-05-12T18:58Z
+From: Ingestion / Backend Agent
 
-From agent: Ingestion / Backend Agent
-
-To agent: Ingestion / Backend Agent
+To: Ingestion / Backend Agent
 
 Status: `ready`
 
@@ -490,188 +664,3 @@ Begin the planned storage persistence checkpoint by designing the repository bou
 - No document chunking, embedding, or pgvector indexing has been added yet.
 - No FastAPI ingestion route, MCP Gateway, MCP tools, or LangGraph workflow changes were made in this handoff.
 - `data/external/raw/` remains intentionally untracked.
-
-## Planned Checkpoint: Canonical Ingestion To Storage Persistence
-
-Date: 2026-05-11
-
-From agent: Ingestion / Backend Agent
-
-To agent: Ingestion / Backend Agent
-
-Status: `planned`
-
-### Trigger
-
-Start this checkpoint after local and first external sample normalization are stable enough that schema churn is low.
-
-Minimum trigger conditions:
-
-- Synthetic seed ingestion passes end to end.
-- First external sample batch normalizes through the same ingestion path.
-- Canonical `Document`, `StructuredRecord`, and `EvalCase` fields are stable.
-- Data quality checks cover missing fields, duplicate source identifiers, broken citations, and unsupported task types.
-
-### Goal
-
-Move from in-memory canonical normalization toward durable ingestion storage while preserving auditability and replay.
-
-### Suggested First Task
-
-Design the repository boundary between canonical ingestion outputs and storage models before adding database writes.
-
-### Acceptance Criteria
-
-- Canonical objects can be mapped to planned PostgreSQL entities without losing citation or audit metadata.
-- Ingestion job records include source identifiers, dataset name, counts, status, errors, and timestamps.
-- Storage work remains testable locally and does not require an LLM provider.
-- PostgreSQL/pgvector integration is introduced behind clear repository or indexer interfaces.
-
-### Known Gaps Or Out Of Scope
-
-- Do not wire the full `POST /ingestion/jobs` API until the repository boundary is clear.
-- Do not generate embeddings or build pgvector indexes before document chunking behavior is agreed.
-- Do not implement MCP Gateway, LangGraph workflows, or research answer generation in this checkpoint.
-
-## Handoff 2026-05-11-2041Z: Phase 0 Runtime Foundation
-
-Date: 2026-05-11T20:41Z
-
-From agent: Foundation / DevOps Agent
-
-To agent: API / Workflow Agent, Ingestion / Backend Agent, MCP Gateway / Tooling Agent
-
-Status: `ready`
-
-### Goal
-
-Provide the Phase 0 local runtime foundation so feature agents can build on a runnable, testable, Docker-backed service baseline.
-
-### Completed Foundation Work
-
-Implemented foundation artifacts:
-
-- `pyproject.toml`
-- `.env.example`
-- `.dockerignore`
-- `Dockerfile`
-- `docker-compose.yml`
-- `.github/workflows/ci.yml`
-- `api/main.py`
-- `api/middleware.py`
-- `api/routes/health.py`
-- `config/settings.py`
-- `observability/logging.py`
-- `observability/request_context.py`
-- `infra/docker/postgres/init/001_enable_pgvector.sql`
-- `docs/phase_0_acceptance.md`
-
-### Verification Evidence
-
-Detailed evidence is recorded in `docs/phase_0_acceptance.md`.
-
-Verified locally:
-
-```bash
-python3 -m pytest
-```
-
-Latest verified result:
-
-```text
-34 passed
-```
-
-Verified Docker Compose:
-
-```bash
-docker compose config
-docker compose up --build -d
-docker compose exec -T api python -c "from urllib.request import urlopen; print(urlopen('http://127.0.0.1:8000/health', timeout=2).read().decode())"
-docker compose down
-```
-
-Observed API, PostgreSQL/pgvector, and Redis services as healthy during the Compose run.
-
-### Suggested First Task
-
-The next feature agent should use the Phase 0 runtime foundation rather than adding a parallel app or service entry point.
-
-For API / Workflow Agent:
-
-- Add route skeletons behind the existing FastAPI app factory.
-- Keep request ID propagation and JSON logging intact.
-
-For Ingestion / Backend Agent:
-
-- Begin repository boundary design before database writes.
-- Keep in-memory ingestion tests stable while introducing persistence.
-
-For MCP Gateway / Tooling Agent:
-
-- Use the existing settings, logging, and request context modules when introducing gateway routing.
-
-### Acceptance Criteria
-
-This handoff is complete when:
-
-- Future agents can run `python3 -m pytest` from the repository root.
-- Future agents can start the local service stack through Docker Compose.
-- `GET /health` remains lightweight and stable.
-- Request IDs continue to appear in health responses and JSON logs.
-- New feature work uses the existing `api`, `config`, and `observability` packages.
-
-### Known Gaps Or Out Of Scope
-
-- No database migrations yet.
-- No persistent ingestion repository yet.
-- No `POST /ingestion/jobs` route yet.
-- No full metrics endpoint yet.
-- No OpenTelemetry exporter configuration yet.
-- No MCP Gateway runtime yet.
-- No LangGraph runtime yet.
-
-## Planned Checkpoint: Foundation Runtime Back To Feature Agents
-
-Date: 2026-05-11
-
-From agent: Foundation / DevOps Agent
-
-To agent: API / Workflow Agent, Ingestion / Backend Agent, MCP Gateway / Tooling Agent
-
-Status: `planned`
-
-### Trigger
-
-Start this checkpoint when a feature agent is ready to build on the Phase 0 runtime foundation.
-
-Minimum trigger conditions:
-
-- Phase 0 foundation artifacts are present.
-- `docs/phase_0_acceptance.md` records setup, health, Compose, and test evidence.
-- Local tests pass with `python3 -m pytest`.
-- Docker Compose config and startup have been verified at least once.
-- Feature work needs an API route, repository boundary, gateway component, or runtime integration.
-
-### Goal
-
-Use the Phase 0 foundation as the shared runtime baseline for Phase 1 and Phase 2 work without creating duplicate app, config, logging, Docker, or CI paths.
-
-### Suggested First Task
-
-Inspect `api/main.py`, `config/settings.py`, `observability/logging.py`, and `docs/phase_0_acceptance.md`, then add the next feature behind the existing package boundaries.
-
-### Acceptance Criteria
-
-- Feature work reuses the existing FastAPI app factory.
-- New runtime code preserves request ID propagation.
-- New tests run through the existing pytest configuration.
-- Docker Compose remains able to start API, PostgreSQL/pgvector, and Redis.
-- Any new known runtime gap is recorded in the relevant handoff or acceptance note.
-
-### Known Gaps Or Out Of Scope
-
-- Do not replace the Phase 0 app entry point without an explicit architecture decision.
-- Do not add a parallel Compose stack for feature work.
-- Do not introduce paid cloud dependencies for local development.
-- Do not implement large feature surfaces in this checkpoint; use it as a coordination return point.
