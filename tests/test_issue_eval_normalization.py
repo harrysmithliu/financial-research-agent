@@ -186,6 +186,65 @@ def test_finagent_eval_cases_preserve_source_metadata() -> None:
     )
 
 
+def test_finagent_eval_cases_normalize_all_curated_cases_with_hf_citations() -> None:
+    cases = normalize_eval_cases_file(
+        FINAGENT_PATH,
+        source_uri=FINAGENT_SOURCE_URI,
+        dataset_name="synthetic_fund_seed",
+    )
+
+    assert len(cases) == 5
+    assert {case.case_id for case in cases} == {
+        "finagent_FE_001",
+        "finagent_NR_001",
+        "finagent_TR_001",
+        "finagent_MH_001",
+        "finagent_ADV_001",
+    }
+    assert all("external_dataset" in case.evaluation_tags for case in cases)
+    assert all("finagent_benchmark" in case.evaluation_tags for case in cases)
+    assert all(
+        citation["source_uri"].startswith("hf://Guen/finagent-benchmark/")
+        for case in cases
+        for citation in case.expected_citations
+    )
+    assert all(
+        citation.get("evidence_text")
+        for case in cases
+        for citation in case.expected_citations
+    )
+
+
+def test_finagent_adversarial_case_preserves_not_available_expectations() -> None:
+    cases = normalize_eval_cases_file(
+        FINAGENT_PATH,
+        source_uri=FINAGENT_SOURCE_URI,
+        dataset_name="synthetic_fund_seed",
+    )
+    case_by_id = {case.case_id: case for case in cases}
+    adversarial_case = case_by_id["finagent_ADV_001"]
+
+    assert adversarial_case.expected_answer == "NOT_AVAILABLE"
+    assert adversarial_case.safety_expectations == {
+        "should_refuse": False,
+        "requires_disclaimer": False,
+        "should_state_not_available": True,
+    }
+    assert "not_available_expected" in adversarial_case.evaluation_tags
+    assert adversarial_case.expected_citations == [
+        {
+            "source_uri": "hf://Guen/finagent-benchmark/benchmark_questions.json#ADV_001",
+            "evidence_text": (
+                "The filing does not contain any disclosure of customer churn rate metrics."
+            ),
+        }
+    ]
+    assert adversarial_case.metadata["source_metadata"]["source_type"] == "adversarial"
+    assert adversarial_case.metadata["source_metadata"]["requires_tools"] == [
+        "vector_search"
+    ]
+
+
 def test_eval_case_normalization_rejects_missing_question() -> None:
     raw_cases = [
         {
