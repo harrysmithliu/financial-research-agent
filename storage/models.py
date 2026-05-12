@@ -131,6 +131,7 @@ class EvalCase:
     evaluation_tags: list[str]
     safety_expectations: dict[str, Any]
     expected_answer: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         _require_non_empty_string("case_id", self.case_id)
@@ -144,9 +145,10 @@ class EvalCase:
         _require_mapping("safety_expectations", self.safety_expectations)
         if self.expected_answer is not None:
             _require_non_empty_string("expected_answer", self.expected_answer)
+        _require_mapping("metadata", self.metadata)
 
     def to_mapping(self) -> dict[str, Any]:
-        return {
+        eval_case = {
             "case_id": self.case_id,
             "task_type": self.task_type,
             "question": self.question,
@@ -156,4 +158,6 @@ class EvalCase:
             "evaluation_tags": list(self.evaluation_tags),
             "safety_expectations": dict(self.safety_expectations),
         }
-
+        if self.metadata:
+            eval_case["metadata"] = dict(self.metadata)
+        return eval_case

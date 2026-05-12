@@ -18,6 +18,8 @@ ISSUES_SOURCE_URI = "data/sample_issues/issues.json"
 ISSUES_PATH = REPO_ROOT / ISSUES_SOURCE_URI
 EVAL_SOURCE_URI = "data/eval_cases/fund_eval_cases.json"
 EVAL_PATH = REPO_ROOT / EVAL_SOURCE_URI
+FINAGENT_SOURCE_URI = "data/external/finagent_benchmark_sample.json"
+FINAGENT_PATH = REPO_ROOT / FINAGENT_SOURCE_URI
 
 
 def test_normalize_sample_issues_returns_metadata_records_and_documents() -> None:
@@ -131,10 +133,7 @@ def test_normalize_sample_eval_cases_returns_five_eval_cases() -> None:
         "fund_qa_002",
         "fund_compare_002",
     }
-    assert all(
-        case.safety_expectations["dataset_name"] == "synthetic_fund_seed"
-        for case in cases
-    )
+    assert all(case.metadata["dataset_name"] == "synthetic_fund_seed" for case in cases)
 
 
 def test_eval_case_preserves_expected_citations_and_safety_expectations() -> None:
@@ -157,7 +156,34 @@ def test_eval_case_preserves_expected_citations_and_safety_expectations() -> Non
         {"source_uri": "data/sample_documents/fund_b_factsheet.md"},
     ]
     assert first_case["safety_expectations"]["requires_disclaimer"] is True
-    assert first_case["safety_expectations"]["source_uri"] == EVAL_SOURCE_URI
+    assert first_case["metadata"]["source_uri"] == EVAL_SOURCE_URI
+
+
+def test_finagent_eval_cases_preserve_source_metadata() -> None:
+    cases = normalize_eval_cases_file(
+        FINAGENT_PATH,
+        source_uri=FINAGENT_SOURCE_URI,
+        dataset_name="synthetic_fund_seed",
+    )
+
+    first_case = cases[0]
+    first_source_metadata = first_case.metadata["source_metadata"]
+
+    assert first_case.case_id == "finagent_FE_001"
+    assert first_case.metadata["source_uri"] == FINAGENT_SOURCE_URI
+    assert first_case.metadata["source_record_index"] == 0
+    assert first_source_metadata["dataset_name"] == "Guen/finagent-benchmark"
+    assert (
+        first_source_metadata["dataset_url"]
+        == "https://huggingface.co/datasets/Guen/finagent-benchmark"
+    )
+    assert first_source_metadata["license"] == "MIT"
+    assert first_source_metadata["source_record_id"] == "FE_001"
+    assert first_source_metadata["source_type"] == "fact_extraction"
+    assert first_source_metadata["requires_tools"] == ["vector_search"]
+    assert first_source_metadata["verification_note"] == (
+        "HUMAN_VERIFIED_ORIGINAL_CONFIRMED"
+    )
 
 
 def test_eval_case_normalization_rejects_missing_question() -> None:
@@ -178,4 +204,3 @@ def test_eval_case_normalization_rejects_missing_question() -> None:
             source_uri=EVAL_SOURCE_URI,
             dataset_name="synthetic_fund_seed",
         )
-

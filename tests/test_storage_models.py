@@ -122,10 +122,18 @@ def test_eval_case_matches_canonical_shape() -> None:
         ],
         evaluation_tags=["fund_comparison", "citation_required"],
         safety_expectations={"should_refuse": False, "requires_disclaimer": True},
+        metadata={
+            "dataset_name": "synthetic_fund_seed",
+            "source_uri": "data/eval_cases/fund_eval_cases.json",
+        },
     )
 
     assert eval_case.to_mapping()["case_id"] == "fund_compare_001"
     assert len(eval_case.to_mapping()["expected_citations"]) == 2
+    assert eval_case.to_mapping()["metadata"] == {
+        "dataset_name": "synthetic_fund_seed",
+        "source_uri": "data/eval_cases/fund_eval_cases.json",
+    }
 
 
 def test_models_are_frozen_after_creation() -> None:
@@ -133,4 +141,3 @@ def test_models_are_frozen_after_creation() -> None:
 
     with pytest.raises(FrozenInstanceError):
         record.record_type = "github_issue"
-

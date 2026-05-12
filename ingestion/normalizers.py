@@ -371,12 +371,13 @@ def normalize_eval_case(
         expected_answer=raw_case.get("expected_answer"),
         expected_citations=list(raw_case["expected_citations"]),
         evaluation_tags=list(raw_case["evaluation_tags"]),
-        safety_expectations={
-            **raw_case["safety_expectations"],
-            "dataset_name": dataset_name,
-            "source_uri": source_uri,
-            "source_record_index": index,
-        },
+        safety_expectations=dict(raw_case["safety_expectations"]),
+        metadata=_build_eval_case_metadata(
+            raw_case,
+            source_uri=source_uri,
+            dataset_name=dataset_name,
+            index=index,
+        ),
     )
 
 
@@ -566,6 +567,11 @@ def _validate_eval_case(raw_case: dict[str, Any], *, index: int) -> None:
         raise NormalizationError(
             f"Eval case at index {index} field 'safety_expectations' must be a mapping"
         )
+    source_metadata = raw_case.get("source_metadata")
+    if source_metadata is not None and not isinstance(source_metadata, dict):
+        raise NormalizationError(
+            f"Eval case at index {index} field 'source_metadata' must be a mapping"
+        )
     expected_answer = raw_case.get("expected_answer")
     if expected_answer is not None and (
         not isinstance(expected_answer, str) or not expected_answer.strip()
@@ -573,6 +579,23 @@ def _validate_eval_case(raw_case: dict[str, Any], *, index: int) -> None:
         raise NormalizationError(
             f"Eval case at index {index} field 'expected_answer' must be null or a non-empty string"
         )
+
+
+def _build_eval_case_metadata(
+    raw_case: dict[str, Any],
+    *,
+    source_uri: str,
+    dataset_name: str,
+    index: int,
+) -> dict[str, Any]:
+    metadata = {
+        "dataset_name": dataset_name,
+        "source_uri": source_uri,
+        "source_record_index": index,
+    }
+    if raw_case.get("source_metadata") is not None:
+        metadata["source_metadata"] = dict(raw_case["source_metadata"])
+    return metadata
 
 
 def _parse_source_datetime(
