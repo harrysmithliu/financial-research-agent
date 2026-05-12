@@ -12,11 +12,11 @@ def test_load_seed_dataset_runs_end_to_end_without_external_services() -> None:
     result = load_seed_dataset(REPO_ROOT)
 
     assert result.manifest.dataset_name == "synthetic_fund_seed"
-    assert len(result.resolved_sources) == 7
+    assert len(result.resolved_sources) == 8
     assert len(result.fund_records) == 4
     assert len(result.issue_records) == 3
     assert len(result.documents) == 13
-    assert len(result.eval_cases) == 5
+    assert len(result.eval_cases) == 10
     assert len(result.structured_records) == 7
 
 
@@ -40,6 +40,11 @@ def test_load_seed_dataset_preserves_expected_entity_identifiers() -> None:
         "fund_qa_001",
         "fund_qa_002",
         "fund_compare_002",
+        "finagent_FE_001",
+        "finagent_NR_001",
+        "finagent_TR_001",
+        "finagent_MH_001",
+        "finagent_ADV_001",
     }
 
 

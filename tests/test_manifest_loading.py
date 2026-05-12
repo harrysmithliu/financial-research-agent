@@ -21,8 +21,8 @@ def test_load_manifest_and_resolve_declared_sources() -> None:
     manifest, resolved_sources = load_and_resolve_manifest(REPO_ROOT)
 
     assert manifest.dataset_name == "synthetic_fund_seed"
-    assert len(manifest.sources) == 7
-    assert len(resolved_sources) == 7
+    assert len(manifest.sources) == 8
+    assert len(resolved_sources) == 8
     assert {resolved.source.source_id for resolved in resolved_sources} == {
         "synthetic_fund_records",
         "fund_a_factsheet",
@@ -31,6 +31,7 @@ def test_load_manifest_and_resolve_declared_sources() -> None:
         "fund_d_factsheet",
         "synthetic_platform_issues",
         "fund_eval_cases",
+        "finagent_benchmark_sample",
     }
     assert all(resolved.path.exists() for resolved in resolved_sources)
 
@@ -84,4 +85,3 @@ def test_unsupported_manifest_source_type_raises_clear_error(tmp_path: Path) -> 
 
     with pytest.raises(ManifestError, match="Unsupported source_type"):
         load_manifest(manifest_path)
-
