@@ -421,6 +421,76 @@ This handoff is complete when:
 - Do not start large-scale Hugging Face mirroring.
 - Do not add TAT-QA yet; prove the first external sample path first.
 
+## Handoff 2026-05-12-1858Z: FinAgent Ingestion Hardening Complete
+
+Date: 2026-05-12T18:58Z
+
+From agent: Ingestion / Backend Agent
+
+To agent: Ingestion / Backend Agent
+
+Status: `ready`
+
+### Goal
+
+Close the external FinAgent sample ingestion hardening loop and make the project ready for the next ingestion storage checkpoint.
+
+### Completed Work
+
+Implemented and verified:
+
+- Manifest and end-to-end ingestion tests now expect `finagent_benchmark_sample`.
+- `load_seed_dataset` loads 8 manifest sources and 10 eval cases.
+- `EvalCase` now has `metadata` for provenance and source-specific metadata.
+- FinAgent `source_metadata` is preserved under `EvalCase.metadata["source_metadata"]`.
+- `safety_expectations` now stays focused on safety and behavior expectations.
+- FinAgent-specific deterministic tests cover all 5 curated cases.
+- The adversarial `finagent_ADV_001` case preserves `expected_answer: NOT_AVAILABLE`, `should_state_not_available`, `not_available_expected`, `hf://` citation, and source metadata.
+- Added lightweight eval case data quality checks for duplicate case IDs, missing expected citations, missing citation `source_uri`, and unsupported task types.
+- Documented the source type decision to keep `finagent_benchmark_sample` as `source_type: sample_dataset` and defer `huggingface_dataset`.
+
+Related commits:
+
+- `ed13859` Update ingestion tests for FinAgent sample
+- `aa4ab77` Preserve eval case source metadata
+- `8ba6e20` Add FinAgent eval case normalization tests
+- `847beaf` Add eval case data quality checks
+- `9759582` Document FinAgent source type decision
+
+### Verification Evidence
+
+Final verification command:
+
+```bash
+python3 -m pytest tests
+```
+
+Latest verified result:
+
+```text
+42 passed
+```
+
+### Suggested First Task
+
+Begin the planned storage persistence checkpoint by designing the repository boundary between canonical ingestion outputs and durable storage models.
+
+### Acceptance Criteria For This Handoff
+
+- Existing synthetic seed ingestion remains stable.
+- FinAgent sample is covered by deterministic normalizer and ingestion tests.
+- External provenance is preserved in `EvalCase.metadata`.
+- `NOT_AVAILABLE` adversarial behavior is covered by tests.
+- Data quality checks cover the first eval case quality gates.
+- The `huggingface_dataset` source type decision is explicitly deferred with rationale.
+
+### Known Gaps Or Out Of Scope
+
+- No PostgreSQL persistence has been added yet.
+- No document chunking, embedding, or pgvector indexing has been added yet.
+- No FastAPI ingestion route, MCP Gateway, MCP tools, or LangGraph workflow changes were made in this handoff.
+- `data/external/raw/` remains intentionally untracked.
+
 ## Planned Checkpoint: Canonical Ingestion To Storage Persistence
 
 Date: 2026-05-11
