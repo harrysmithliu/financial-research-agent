@@ -415,7 +415,8 @@ This handoff is complete when:
 
 - The raw Hugging Face snapshot is intentionally not tracked in git.
 - `source_metadata` in the tracked sample is currently accepted by the raw JSON shape but not preserved by the current `EvalCase` dataclass.
-- The manifest uses supported `source_type: sample_dataset`; a dedicated `huggingface_dataset` source type can be considered by ingestion/backend later.
+- Source type decision: keep `finagent_benchmark_sample` registered as `source_type: sample_dataset` for now. This is a curated local sample, not a live Hugging Face loader, and the existing manifest-driven ingestion path already supports it without new infrastructure.
+- Defer a dedicated `huggingface_dataset` source type until ingestion needs source-specific loader behavior, remote refresh semantics, dataset split handling, or multiple Hugging Face datasets with distinct normalization rules.
 - Do not add PostgreSQL persistence in this handoff unless explicitly directed.
 - Do not start large-scale Hugging Face mirroring.
 - Do not add TAT-QA yet; prove the first external sample path first.
