@@ -752,3 +752,113 @@ Continue within Ingestion / Backend Agent if the next goal is PostgreSQL reposit
 - No document chunking, embedding, or pgvector indexing has been added yet.
 - No FastAPI ingestion route has been added yet.
 - No MCP Gateway, MCP tools, or LangGraph workflow changes were made in this handoff.
+
+## Handoff 2026-05-13-2330Z: Ingestion Storage Ready For Retrieval
+
+From: Ingestion / Backend Agent
+
+To: RAG / Retrieval Agent
+
+Status: `ready`
+
+### Goal
+
+Hand off the completed canonical ingestion and storage persistence path so retrieval work can begin from stored `DocumentChunk` records instead of raw source files.
+
+### Completed Work
+
+Implemented the PostgreSQL-backed ingestion storage path:
+
+- `storage/postgres.py`
+- `PostgresStorageRepository`
+- PostgreSQL connection helper
+- ingestion storage migration runner
+- JSONB parameter handling for canonical payloads
+- read-side hydration back into canonical storage models
+
+Implemented document chunk storage and deterministic chunk generation:
+
+- `DocumentChunk` repository methods in `StorageRepository`
+- `InMemoryStorageRepository.save_document_chunks`
+- `InMemoryStorageRepository.list_document_chunks`
+- `document_chunks` table in `storage/migrations/001_ingestion_storage.sql`
+- `ingestion/chunker.py`
+- `IngestionResult.document_chunks`
+- `run_seed_ingestion` persistence of generated chunks
+
+Implemented the Postgres seed ingestion runner:
+
+- `ingestion/postgres_runner.py`
+- `run_seed_ingestion_to_postgres(repo_root, settings=None, database_url=None, started_at=None)`
+
+The runner now resolves a database URL, opens a PostgreSQL connection, runs ingestion storage migrations, persists the seed ingestion outputs through `PostgresStorageRepository`, commits on success, rolls back on failure, and closes the connection.
+
+Current deterministic seed ingestion output counts:
+
+- 7 structured records
+- 13 documents
+- 17 document chunks
+- 10 eval cases
+
+### Verification Evidence
+
+Final verification command:
+
+```bash
+python3 -m pytest tests
+```
+
+Latest verified result:
+
+```text
+76 passed
+```
+
+Additional targeted verification:
+
+```bash
+python3 -m pytest tests/test_postgres_ingestion_runner.py tests/test_postgres_storage_repository.py
+```
+
+Latest targeted result:
+
+```text
+18 passed
+```
+
+Related commits:
+
+- `89a5402` Add PostgreSQL storage adapter scaffold
+- `703f413` Add Postgres storage connection helpers
+- `705e142` Add Postgres repository read methods
+- `b841640` Add document chunk storage boundary
+- `0a99b8f` Add deterministic document chunking
+- `0ba1e44` Add Postgres seed ingestion runner
+
+### Acceptance Criteria Satisfied
+
+- Canonical ingestion outputs can be persisted through a repository boundary.
+- PostgreSQL schema exists for ingestion jobs, documents, document chunks, structured records, and evaluation cases.
+- Seed ingestion generates citation-ready `DocumentChunk` records with stable IDs, source URIs, metadata, and empty embeddings.
+- PostgreSQL adapter can write and read canonical payloads without requiring API, MCP Gateway, LangGraph, or LLM provider imports.
+- The Postgres seed ingestion runner wires settings/database URL, migrations, repository persistence, transaction success, transaction rollback, and connection close behavior.
+
+### Suggested First Task
+
+RAG / Retrieval Agent should begin with the stored `DocumentChunk` boundary:
+
+- define the embedding adapter interface
+- decide how embeddings are represented before pgvector conversion
+- add pgvector-compatible indexing for `DocumentChunk`
+- preserve `chunk_id`, `document_id`, `source_uri`, and citation metadata through retrieval results
+
+API / Workflow Agent can work in parallel after reading this handoff by wrapping `run_seed_ingestion_to_postgres` behind a `POST /ingestion/jobs` route, but should avoid bypassing the repository boundary.
+
+### Known Gaps Or Out Of Scope
+
+- No embedding provider adapter has been implemented yet.
+- No pgvector index or vector search query path has been implemented yet.
+- No FastAPI ingestion route has been added yet.
+- No MCP Gateway tools or LangGraph workflow changes were made in this handoff.
+- The local host Python environment used for verification did not have `ruff` installed, so lint was not run.
+- The Postgres runner is covered by fake-connection tests; a live Docker Compose PostgreSQL write/read smoke test remains for a later runtime verification pass.
