@@ -24,6 +24,17 @@ CREATE TABLE IF NOT EXISTS documents (
     payload JSONB NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS document_chunks (
+    chunk_id TEXT PRIMARY KEY,
+    document_id TEXT NOT NULL REFERENCES documents(document_id),
+    chunk_index INTEGER NOT NULL,
+    text TEXT NOT NULL,
+    source_uri TEXT NOT NULL,
+    embedding JSONB,
+    metadata JSONB NOT NULL,
+    payload JSONB NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS structured_records (
     record_key TEXT PRIMARY KEY,
     record_type TEXT NOT NULL,
@@ -39,4 +50,3 @@ CREATE TABLE IF NOT EXISTS evaluation_cases (
     metadata JSONB NOT NULL,
     payload JSONB NOT NULL
 );
-

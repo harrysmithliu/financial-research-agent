@@ -5,7 +5,13 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Protocol
 
-from storage.models import Document, EvalCase, IngestionJobRecord, StructuredRecord
+from storage.models import (
+    Document,
+    DocumentChunk,
+    EvalCase,
+    IngestionJobRecord,
+    StructuredRecord,
+)
 
 DEFAULT_MIGRATIONS_DIR = Path(__file__).resolve().parent / "migrations"
 
@@ -54,6 +60,46 @@ class PostgresStorageRepository:
                     _jsonb_param(document.metadata),
                     document.created_at,
                     document.updated_at,
+                    _jsonb_param(payload),
+            ),
+        )
+
+    def save_document_chunks(self, chunks: tuple[DocumentChunk, ...]) -> None:
+        for chunk in chunks:
+            payload = chunk.to_mapping()
+            embedding = (
+                _jsonb_param(chunk.embedding) if chunk.embedding is not None else None
+            )
+            self.connection.execute(
+                """
+                INSERT INTO document_chunks (
+                    chunk_id,
+                    document_id,
+                    chunk_index,
+                    text,
+                    source_uri,
+                    embedding,
+                    metadata,
+                    payload
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (chunk_id) DO UPDATE SET
+                    document_id = EXCLUDED.document_id,
+                    chunk_index = EXCLUDED.chunk_index,
+                    text = EXCLUDED.text,
+                    source_uri = EXCLUDED.source_uri,
+                    embedding = EXCLUDED.embedding,
+                    metadata = EXCLUDED.metadata,
+                    payload = EXCLUDED.payload
+                """,
+                (
+                    chunk.chunk_id,
+                    chunk.document_id,
+                    chunk.chunk_index,
+                    chunk.text,
+                    chunk.source_uri,
+                    embedding,
+                    _jsonb_param(chunk.metadata),
                     _jsonb_param(payload),
                 ),
             )
@@ -170,6 +216,17 @@ class PostgresStorageRepository:
         ).fetchall()
         return tuple(_document_from_payload(_row_payload(row)) for row in rows)
 
+    def list_document_chunks(self) -> tuple[DocumentChunk, ...]:
+        rows = self.connection.execute(
+            """
+            SELECT payload
+            FROM document_chunks
+            ORDER BY document_id, chunk_index, chunk_id
+            """,
+            (),
+        ).fetchall()
+        return tuple(_document_chunk_from_payload(_row_payload(row)) for row in rows)
+
     def list_structured_records(self) -> tuple[StructuredRecord, ...]:
         rows = self.connection.execute(
             """
@@ -260,6 +317,18 @@ def _document_from_payload(payload: dict[str, Any]) -> Document:
         metadata=dict(payload["metadata"]),
         created_at=datetime.fromisoformat(payload["created_at"]),
         updated_at=datetime.fromisoformat(payload["updated_at"]),
+    )
+
+
+def _document_chunk_from_payload(payload: dict[str, Any]) -> DocumentChunk:
+    return DocumentChunk(
+        chunk_id=payload["chunk_id"],
+        document_id=payload["document_id"],
+        chunk_index=payload["chunk_index"],
+        text=payload["text"],
+        embedding=payload.get("embedding"),
+        metadata=dict(payload["metadata"]),
+        source_uri=payload["source_uri"],
     )
 
 

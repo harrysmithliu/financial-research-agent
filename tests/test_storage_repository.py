@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from ingestion.jobs import load_seed_dataset, run_seed_ingestion
-from storage.models import IngestionJobRecord
+from storage.models import DocumentChunk, IngestionJobRecord
 from storage.repository import InMemoryStorageRepository
 
 
@@ -23,6 +23,22 @@ def test_in_memory_repository_saves_canonical_ingestion_outputs() -> None:
     assert len(repository.list_structured_records()) == 7
     assert len(repository.list_documents()) == 13
     assert len(repository.list_eval_cases()) == 10
+
+
+def test_in_memory_repository_saves_document_chunks() -> None:
+    repository = InMemoryStorageRepository()
+    chunk = DocumentChunk(
+        chunk_id="chunk_doc_fund_a_factsheet_000",
+        document_id="doc_fund_a_factsheet",
+        chunk_index=0,
+        text="Northstar Growth Fund seeks long-term capital appreciation.",
+        metadata={"dataset_name": "synthetic_fund_seed"},
+        source_uri="data/sample_documents/fund_a_factsheet.md",
+    )
+
+    repository.save_document_chunks((chunk,))
+
+    assert repository.list_document_chunks() == (chunk,)
 
 
 def test_in_memory_repository_preserves_citation_and_audit_metadata() -> None:

@@ -3,13 +3,22 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Protocol
 
-from storage.models import Document, EvalCase, IngestionJobRecord, StructuredRecord
+from storage.models import (
+    Document,
+    DocumentChunk,
+    EvalCase,
+    IngestionJobRecord,
+    StructuredRecord,
+)
 
 
 class StorageRepository(Protocol):
     """Boundary for durable storage implementations."""
 
     def save_documents(self, documents: tuple[Document, ...]) -> None:
+        ...
+
+    def save_document_chunks(self, chunks: tuple[DocumentChunk, ...]) -> None:
         ...
 
     def save_structured_records(self, records: tuple[StructuredRecord, ...]) -> None:
@@ -22,6 +31,9 @@ class StorageRepository(Protocol):
         ...
 
     def list_documents(self) -> tuple[Document, ...]:
+        ...
+
+    def list_document_chunks(self) -> tuple[DocumentChunk, ...]:
         ...
 
     def list_structured_records(self) -> tuple[StructuredRecord, ...]:
@@ -39,12 +51,16 @@ class InMemoryStorageRepository:
     """Test repository that preserves the production storage boundary without a DB."""
 
     _documents: list[Document] = field(default_factory=list)
+    _document_chunks: list[DocumentChunk] = field(default_factory=list)
     _structured_records: list[StructuredRecord] = field(default_factory=list)
     _eval_cases: list[EvalCase] = field(default_factory=list)
     _ingestion_job_records: list[IngestionJobRecord] = field(default_factory=list)
 
     def save_documents(self, documents: tuple[Document, ...]) -> None:
         self._documents.extend(documents)
+
+    def save_document_chunks(self, chunks: tuple[DocumentChunk, ...]) -> None:
+        self._document_chunks.extend(chunks)
 
     def save_structured_records(self, records: tuple[StructuredRecord, ...]) -> None:
         self._structured_records.extend(records)
@@ -57,6 +73,9 @@ class InMemoryStorageRepository:
 
     def list_documents(self) -> tuple[Document, ...]:
         return tuple(self._documents)
+
+    def list_document_chunks(self) -> tuple[DocumentChunk, ...]:
+        return tuple(self._document_chunks)
 
     def list_structured_records(self) -> tuple[StructuredRecord, ...]:
         return tuple(self._structured_records)

@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from ingestion.jobs import load_seed_dataset
-from storage.models import IngestionJobRecord
+from storage.models import DocumentChunk, IngestionJobRecord
 from storage.postgres import (
     PostgresStorageRepository,
     connect_postgres_repository,
@@ -65,6 +65,52 @@ def test_postgres_repository_writes_documents_with_payload() -> None:
     assert params[2] == "data/sample_documents/fund_a_factsheet.md"
     assert _jsonb_value(params[5])["dataset_name"] == "synthetic_fund_seed"
     assert _jsonb_value(params[8])["document_id"] == "doc_fund_a_factsheet"
+
+
+def test_postgres_repository_writes_document_chunks_with_payload() -> None:
+    connection = FakeConnection()
+    repository = PostgresStorageRepository(connection)
+    chunk = DocumentChunk(
+        chunk_id="chunk_doc_fund_a_factsheet_000",
+        document_id="doc_fund_a_factsheet",
+        chunk_index=0,
+        text="Northstar Growth Fund seeks long-term capital appreciation.",
+        metadata={"dataset_name": "synthetic_fund_seed"},
+        source_uri="data/sample_documents/fund_a_factsheet.md",
+    )
+
+    repository.save_document_chunks((chunk,))
+
+    query, params = connection.calls[0]
+
+    assert "INSERT INTO document_chunks" in query
+    assert params[0] == "chunk_doc_fund_a_factsheet_000"
+    assert params[1] == "doc_fund_a_factsheet"
+    assert params[2] == 0
+    assert params[5] is None
+    assert _jsonb_value(params[6])["dataset_name"] == "synthetic_fund_seed"
+    assert _jsonb_value(params[7])["chunk_id"] == "chunk_doc_fund_a_factsheet_000"
+
+
+def test_postgres_repository_writes_document_chunk_embedding_as_jsonb() -> None:
+    connection = FakeConnection()
+    repository = PostgresStorageRepository(connection)
+    chunk = DocumentChunk(
+        chunk_id="chunk_doc_fund_a_factsheet_001",
+        document_id="doc_fund_a_factsheet",
+        chunk_index=1,
+        text="Expense ratio is 0.65%.",
+        embedding=[0.1, 0.2, 0.3],
+        metadata={"dataset_name": "synthetic_fund_seed"},
+        source_uri="data/sample_documents/fund_a_factsheet.md",
+    )
+
+    repository.save_document_chunks((chunk,))
+
+    _, params = connection.calls[0]
+
+    assert _jsonb_value(params[5]) == [0.1, 0.2, 0.3]
+    assert _jsonb_value(params[7])["embedding"] == [0.1, 0.2, 0.3]
 
 
 def test_postgres_repository_writes_structured_records_with_stable_key() -> None:
@@ -187,6 +233,24 @@ def test_postgres_repository_lists_documents_from_payload_rows() -> None:
     assert "ORDER BY document_id" in connection.calls[0][0]
 
 
+def test_postgres_repository_lists_document_chunks_from_payload_rows() -> None:
+    chunk = DocumentChunk(
+        chunk_id="chunk_doc_fund_a_factsheet_001",
+        document_id="doc_fund_a_factsheet",
+        chunk_index=1,
+        text="Expense ratio is 0.65%.",
+        embedding=[0.1, 0.2, 0.3],
+        metadata={"dataset_name": "synthetic_fund_seed"},
+        source_uri="data/sample_documents/fund_a_factsheet.md",
+    )
+    connection = FakeReadConnection(responses=[[(chunk.to_mapping(),)]])
+    repository = PostgresStorageRepository(connection)
+
+    assert repository.list_document_chunks() == (chunk,)
+    assert "FROM document_chunks" in connection.calls[0][0]
+    assert "ORDER BY document_id, chunk_index, chunk_id" in connection.calls[0][0]
+
+
 def test_postgres_repository_lists_structured_records_from_payload_rows() -> None:
     ingestion_result = load_seed_dataset(REPO_ROOT)
     fund_record = ingestion_result.fund_records[0]
@@ -240,6 +304,7 @@ def test_ingestion_storage_schema_declares_expected_tables() -> None:
 
     assert "CREATE TABLE IF NOT EXISTS ingestion_job_records" in schema
     assert "CREATE TABLE IF NOT EXISTS documents" in schema
+    assert "CREATE TABLE IF NOT EXISTS document_chunks" in schema
     assert "CREATE TABLE IF NOT EXISTS structured_records" in schema
     assert "CREATE TABLE IF NOT EXISTS evaluation_cases" in schema
     assert "JSONB" in schema
