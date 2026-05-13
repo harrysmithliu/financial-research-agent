@@ -61,8 +61,8 @@ class PostgresStorageRepository:
                     document.created_at,
                     document.updated_at,
                     _jsonb_param(payload),
-            ),
-        )
+                ),
+            )
 
     def save_document_chunks(self, chunks: tuple[DocumentChunk, ...]) -> None:
         for chunk in chunks:
@@ -261,7 +261,7 @@ class PostgresStorageRepository:
         return tuple(_ingestion_job_from_payload(_row_payload(row)) for row in rows)
 
 
-def connect_postgres_repository(database_url: str) -> PostgresStorageRepository:
+def connect_postgres(database_url: str) -> PostgresConnection:
     try:
         import psycopg
     except ModuleNotFoundError as exc:
@@ -269,7 +269,11 @@ def connect_postgres_repository(database_url: str) -> PostgresStorageRepository:
             "psycopg is required to create a PostgreSQL storage repository"
         ) from exc
 
-    return PostgresStorageRepository(psycopg.connect(database_url))
+    return psycopg.connect(database_url)
+
+
+def connect_postgres_repository(database_url: str) -> PostgresStorageRepository:
+    return PostgresStorageRepository(connect_postgres(database_url))
 
 
 def migration_paths(migrations_dir: Path = DEFAULT_MIGRATIONS_DIR) -> tuple[Path, ...]:
