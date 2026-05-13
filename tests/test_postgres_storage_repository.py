@@ -28,6 +28,24 @@ class FakeConnection:
         self.calls.append((query, params))
 
 
+@dataclass
+class FakeCursor:
+    rows: list[Any]
+
+    def fetchall(self) -> list[Any]:
+        return self.rows
+
+
+@dataclass
+class FakeReadConnection:
+    responses: list[list[Any]]
+    calls: list[tuple[str, tuple[Any, ...]]] = field(default_factory=list)
+
+    def execute(self, query: str, params: tuple[Any, ...]) -> FakeCursor:
+        self.calls.append((query, params))
+        return FakeCursor(self.responses.pop(0))
+
+
 def _jsonb_value(value: Any) -> Any:
     return getattr(value, "obj", value)
 
@@ -156,6 +174,63 @@ def test_run_ingestion_storage_migrations_executes_files_in_order(
         ("SELECT 1;", ()),
         ("SELECT 2;", ()),
     ]
+
+
+def test_postgres_repository_lists_documents_from_payload_rows() -> None:
+    ingestion_result = load_seed_dataset(REPO_ROOT)
+    document = ingestion_result.documents[0]
+    connection = FakeReadConnection(responses=[[(document.to_mapping(),)]])
+    repository = PostgresStorageRepository(connection)
+
+    assert repository.list_documents() == (document,)
+    assert "FROM documents" in connection.calls[0][0]
+    assert "ORDER BY document_id" in connection.calls[0][0]
+
+
+def test_postgres_repository_lists_structured_records_from_payload_rows() -> None:
+    ingestion_result = load_seed_dataset(REPO_ROOT)
+    fund_record = ingestion_result.fund_records[0]
+    connection = FakeReadConnection(responses=[[(fund_record.to_mapping(),)]])
+    repository = PostgresStorageRepository(connection)
+
+    assert repository.list_structured_records() == (fund_record,)
+    assert "FROM structured_records" in connection.calls[0][0]
+    assert "ORDER BY record_type, record_key" in connection.calls[0][0]
+
+
+def test_postgres_repository_lists_eval_cases_from_dict_payload_rows() -> None:
+    ingestion_result = load_seed_dataset(REPO_ROOT)
+    eval_case = next(
+        case
+        for case in ingestion_result.eval_cases
+        if case.case_id == "finagent_FE_001"
+    )
+    connection = FakeReadConnection(responses=[[{"payload": eval_case.to_mapping()}]])
+    repository = PostgresStorageRepository(connection)
+
+    assert repository.list_eval_cases() == (eval_case,)
+    assert "FROM evaluation_cases" in connection.calls[0][0]
+    assert "ORDER BY case_id" in connection.calls[0][0]
+
+
+def test_postgres_repository_lists_ingestion_job_records_from_payload_rows() -> None:
+    job_record = IngestionJobRecord(
+        job_id="ingest_synthetic_fund_seed_0.1.0",
+        dataset_name="synthetic_fund_seed",
+        source_ids=("synthetic_fund_records", "finagent_benchmark_sample"),
+        status="completed",
+        document_count=13,
+        structured_record_count=7,
+        eval_case_count=10,
+        started_at=NOW,
+        finished_at=NOW,
+    )
+    connection = FakeReadConnection(responses=[[(job_record.to_mapping(),)]])
+    repository = PostgresStorageRepository(connection)
+
+    assert repository.list_ingestion_job_records() == (job_record,)
+    assert "FROM ingestion_job_records" in connection.calls[0][0]
+    assert "ORDER BY started_at, job_id" in connection.calls[0][0]
 
 
 def test_ingestion_storage_schema_declares_expected_tables() -> None:

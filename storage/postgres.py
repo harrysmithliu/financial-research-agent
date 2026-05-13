@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -158,6 +159,50 @@ class PostgresStorageRepository:
             ),
         )
 
+    def list_documents(self) -> tuple[Document, ...]:
+        rows = self.connection.execute(
+            """
+            SELECT payload
+            FROM documents
+            ORDER BY document_id
+            """,
+            (),
+        ).fetchall()
+        return tuple(_document_from_payload(_row_payload(row)) for row in rows)
+
+    def list_structured_records(self) -> tuple[StructuredRecord, ...]:
+        rows = self.connection.execute(
+            """
+            SELECT payload
+            FROM structured_records
+            ORDER BY record_type, record_key
+            """,
+            (),
+        ).fetchall()
+        return tuple(_structured_record_from_payload(_row_payload(row)) for row in rows)
+
+    def list_eval_cases(self) -> tuple[EvalCase, ...]:
+        rows = self.connection.execute(
+            """
+            SELECT payload
+            FROM evaluation_cases
+            ORDER BY case_id
+            """,
+            (),
+        ).fetchall()
+        return tuple(_eval_case_from_payload(_row_payload(row)) for row in rows)
+
+    def list_ingestion_job_records(self) -> tuple[IngestionJobRecord, ...]:
+        rows = self.connection.execute(
+            """
+            SELECT payload
+            FROM ingestion_job_records
+            ORDER BY started_at, job_id
+            """,
+            (),
+        ).fetchall()
+        return tuple(_ingestion_job_from_payload(_row_payload(row)) for row in rows)
+
 
 def connect_postgres_repository(database_url: str) -> PostgresStorageRepository:
     try:
@@ -197,3 +242,66 @@ def _jsonb_param(value: Any) -> Any:
         return value
 
     return Jsonb(value)
+
+
+def _row_payload(row: Any) -> dict[str, Any]:
+    if isinstance(row, dict):
+        return row["payload"]
+    return row[0]
+
+
+def _document_from_payload(payload: dict[str, Any]) -> Document:
+    return Document(
+        document_id=payload["document_id"],
+        source_type=payload["source_type"],
+        source_uri=payload["source_uri"],
+        title=payload["title"],
+        body=payload["body"],
+        metadata=dict(payload["metadata"]),
+        created_at=datetime.fromisoformat(payload["created_at"]),
+        updated_at=datetime.fromisoformat(payload["updated_at"]),
+    )
+
+
+def _structured_record_from_payload(payload: dict[str, Any]) -> StructuredRecord:
+    values = {
+        key: value
+        for key, value in payload.items()
+        if key not in {"record_type", "source_uri", "metadata"}
+    }
+    return StructuredRecord(
+        record_type=payload["record_type"],
+        source_uri=payload.get("source_uri"),
+        metadata=dict(payload.get("metadata", {})),
+        values=values,
+    )
+
+
+def _eval_case_from_payload(payload: dict[str, Any]) -> EvalCase:
+    return EvalCase(
+        case_id=payload["case_id"],
+        task_type=payload["task_type"],
+        question=payload["question"],
+        entities=list(payload["entities"]),
+        expected_answer=payload.get("expected_answer"),
+        expected_citations=list(payload["expected_citations"]),
+        evaluation_tags=list(payload["evaluation_tags"]),
+        safety_expectations=dict(payload["safety_expectations"]),
+        metadata=dict(payload.get("metadata", {})),
+    )
+
+
+def _ingestion_job_from_payload(payload: dict[str, Any]) -> IngestionJobRecord:
+    finished_at = payload.get("finished_at")
+    return IngestionJobRecord(
+        job_id=payload["job_id"],
+        dataset_name=payload["dataset_name"],
+        source_ids=tuple(payload["source_ids"]),
+        status=payload["status"],
+        document_count=payload["document_count"],
+        structured_record_count=payload["structured_record_count"],
+        eval_case_count=payload["eval_case_count"],
+        started_at=datetime.fromisoformat(payload["started_at"]),
+        finished_at=datetime.fromisoformat(finished_at) if finished_at else None,
+        error_message=payload.get("error_message"),
+    )
