@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Protocol
 
 from storage.models import Document, EvalCase, IngestionJobRecord, StructuredRecord
+
+DEFAULT_MIGRATIONS_DIR = Path(__file__).resolve().parent / "migrations"
 
 
 class PostgresConnection(Protocol):
@@ -47,10 +50,10 @@ class PostgresStorageRepository:
                     document.source_uri,
                     document.title,
                     document.body,
-                    document.metadata,
+                    _jsonb_param(document.metadata),
                     document.created_at,
                     document.updated_at,
-                    payload,
+                    _jsonb_param(payload),
                 ),
             )
 
@@ -78,8 +81,8 @@ class PostgresStorageRepository:
                     record_key,
                     record.record_type,
                     record.source_uri,
-                    record.metadata,
-                    payload,
+                    _jsonb_param(record.metadata),
+                    _jsonb_param(payload),
                 ),
             )
 
@@ -106,8 +109,8 @@ class PostgresStorageRepository:
                     eval_case.case_id,
                     eval_case.task_type,
                     eval_case.question,
-                    eval_case.metadata,
-                    payload,
+                    _jsonb_param(eval_case.metadata),
+                    _jsonb_param(payload),
                 ),
             )
 
@@ -143,7 +146,7 @@ class PostgresStorageRepository:
             (
                 job_record.job_id,
                 job_record.dataset_name,
-                list(job_record.source_ids),
+                _jsonb_param(list(job_record.source_ids)),
                 job_record.status,
                 job_record.document_count,
                 job_record.structured_record_count,
@@ -151,9 +154,32 @@ class PostgresStorageRepository:
                 job_record.started_at,
                 job_record.finished_at,
                 job_record.error_message,
-                payload,
+                _jsonb_param(payload),
             ),
         )
+
+
+def connect_postgres_repository(database_url: str) -> PostgresStorageRepository:
+    try:
+        import psycopg
+    except ModuleNotFoundError as exc:
+        raise RuntimeError(
+            "psycopg is required to create a PostgreSQL storage repository"
+        ) from exc
+
+    return PostgresStorageRepository(psycopg.connect(database_url))
+
+
+def migration_paths(migrations_dir: Path = DEFAULT_MIGRATIONS_DIR) -> tuple[Path, ...]:
+    return tuple(sorted(migrations_dir.glob("*.sql")))
+
+
+def run_ingestion_storage_migrations(
+    connection: PostgresConnection,
+    migrations_dir: Path = DEFAULT_MIGRATIONS_DIR,
+) -> None:
+    for migration_path in migration_paths(migrations_dir):
+        connection.execute(migration_path.read_text(encoding="utf-8"), ())
 
 
 def _structured_record_key(record: StructuredRecord, fallback_index: int) -> str:
@@ -163,3 +189,11 @@ def _structured_record_key(record: StructuredRecord, fallback_index: int) -> str
             return f"{record.record_type}:{value}"
     return f"{record.record_type}:{record.source_uri or 'unknown'}:{fallback_index}"
 
+
+def _jsonb_param(value: Any) -> Any:
+    try:
+        from psycopg.types.json import Jsonb
+    except ModuleNotFoundError:
+        return value
+
+    return Jsonb(value)
