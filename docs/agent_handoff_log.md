@@ -597,6 +597,53 @@ This handoff is complete when:
 - Do not start large-scale Hugging Face mirroring.
 - Do not add TAT-QA yet; prove the first external sample path first.
 
+### Planned Checkpoint: External Ingestion Stable To Next Data Expansion
+
+Return To: Data Engineering Agent
+
+Status: `planned`
+
+#### Trigger
+
+Start this checkpoint after Ingestion / Backend Agent has hardened the first external FinAgent sample path.
+
+Minimum trigger conditions:
+
+- Existing synthetic seed ingestion remains stable.
+- The FinAgent sample has deterministic normalizer or ingestion tests.
+- External provenance from `source_metadata` is either preserved in canonical models or explicitly deferred with rationale.
+- The `huggingface_dataset` source type decision is implemented or explicitly deferred with rationale.
+- Adversarial `NOT_AVAILABLE` behavior is covered by tests.
+- `python3 -m pytest` passes.
+
+#### Goal
+
+Return to data expansion after the first external sample is stable, and add the next small curated dataset batch without broadening scope prematurely.
+
+#### Suggested First Task
+
+Read the latest ingestion hardening handoff, confirm whether the trigger conditions are satisfied, then choose the next data expansion slice.
+
+Preferred next candidates:
+
+- TAT-QA tiny sample for table/text financial QA, or
+- a small real GitHub issue/comment sample from OpenBB or QuantConnect Lean.
+
+#### Acceptance Criteria
+
+- The next external batch is small enough for manual review.
+- Source provenance, license, sample size, and retrieval method are documented.
+- `data/manifest.json` and `data/README.md` are updated.
+- New records map cleanly to existing canonical data formats or clearly identify required schema changes.
+- No real client data, credentials, live trading data, or unsafe investment advice is introduced.
+
+#### Known Gaps Or Out Of Scope
+
+- Do not start large-scale Hugging Face mirroring.
+- Do not start unbounded GitHub crawling.
+- Do not add storage persistence, FastAPI routes, MCP Gateway, or LangGraph workflow code from this checkpoint.
+- Keep the next data expansion reversible and easy to inspect.
+
 ## Handoff 2026-05-12-1858Z: FinAgent Ingestion Hardening Complete
 
 From: Ingestion / Backend Agent
