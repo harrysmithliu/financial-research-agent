@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Protocol
 
-from storage.models import Document, EvalCase, StructuredRecord
+from storage.models import Document, EvalCase, IngestionJobRecord, StructuredRecord
 
 
 class StorageRepository(Protocol):
@@ -18,6 +18,9 @@ class StorageRepository(Protocol):
     def save_eval_cases(self, eval_cases: tuple[EvalCase, ...]) -> None:
         ...
 
+    def save_ingestion_job_record(self, job_record: IngestionJobRecord) -> None:
+        ...
+
     def list_documents(self) -> tuple[Document, ...]:
         ...
 
@@ -25,6 +28,9 @@ class StorageRepository(Protocol):
         ...
 
     def list_eval_cases(self) -> tuple[EvalCase, ...]:
+        ...
+
+    def list_ingestion_job_records(self) -> tuple[IngestionJobRecord, ...]:
         ...
 
 
@@ -35,6 +41,7 @@ class InMemoryStorageRepository:
     _documents: list[Document] = field(default_factory=list)
     _structured_records: list[StructuredRecord] = field(default_factory=list)
     _eval_cases: list[EvalCase] = field(default_factory=list)
+    _ingestion_job_records: list[IngestionJobRecord] = field(default_factory=list)
 
     def save_documents(self, documents: tuple[Document, ...]) -> None:
         self._documents.extend(documents)
@@ -45,6 +52,9 @@ class InMemoryStorageRepository:
     def save_eval_cases(self, eval_cases: tuple[EvalCase, ...]) -> None:
         self._eval_cases.extend(eval_cases)
 
+    def save_ingestion_job_record(self, job_record: IngestionJobRecord) -> None:
+        self._ingestion_job_records.append(job_record)
+
     def list_documents(self) -> tuple[Document, ...]:
         return tuple(self._documents)
 
@@ -54,3 +64,5 @@ class InMemoryStorageRepository:
     def list_eval_cases(self) -> tuple[EvalCase, ...]:
         return tuple(self._eval_cases)
 
+    def list_ingestion_job_records(self) -> tuple[IngestionJobRecord, ...]:
+        return tuple(self._ingestion_job_records)

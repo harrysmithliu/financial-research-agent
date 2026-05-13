@@ -9,6 +9,7 @@ from storage.models import (
     Document,
     DocumentChunk,
     EvalCase,
+    IngestionJobRecord,
     ModelValidationError,
     StructuredRecord,
 )
@@ -141,3 +142,45 @@ def test_models_are_frozen_after_creation() -> None:
 
     with pytest.raises(FrozenInstanceError):
         record.record_type = "github_issue"
+
+
+def test_ingestion_job_record_matches_storage_boundary_shape() -> None:
+    job_record = IngestionJobRecord(
+        job_id="ingest_synthetic_fund_seed_001",
+        dataset_name="synthetic_fund_seed",
+        source_ids=("synthetic_fund_records", "fund_eval_cases"),
+        status="completed",
+        document_count=13,
+        structured_record_count=7,
+        eval_case_count=10,
+        started_at=NOW,
+        finished_at=NOW,
+    )
+
+    assert job_record.to_mapping() == {
+        "job_id": "ingest_synthetic_fund_seed_001",
+        "dataset_name": "synthetic_fund_seed",
+        "source_ids": ["synthetic_fund_records", "fund_eval_cases"],
+        "status": "completed",
+        "document_count": 13,
+        "structured_record_count": 7,
+        "eval_case_count": 10,
+        "started_at": "2026-05-11T00:00:00+00:00",
+        "finished_at": "2026-05-11T00:00:00+00:00",
+        "error_message": None,
+    }
+
+
+def test_failed_ingestion_job_record_requires_error_message() -> None:
+    with pytest.raises(ModelValidationError, match="error_message"):
+        IngestionJobRecord(
+            job_id="ingest_failed_001",
+            dataset_name="synthetic_fund_seed",
+            source_ids=("fund_eval_cases",),
+            status="failed",
+            document_count=0,
+            structured_record_count=0,
+            eval_case_count=0,
+            started_at=NOW,
+            finished_at=NOW,
+        )

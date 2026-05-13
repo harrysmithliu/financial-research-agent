@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from pathlib import Path
 
 from ingestion.jobs import load_seed_dataset
+from storage.models import IngestionJobRecord
 from storage.repository import InMemoryStorageRepository
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+NOW = datetime(2026, 5, 12, tzinfo=UTC)
 
 
 def test_in_memory_repository_saves_canonical_ingestion_outputs() -> None:
@@ -60,3 +63,21 @@ def test_in_memory_repository_preserves_citation_and_audit_metadata() -> None:
         == "https://huggingface.co/datasets/Guen/finagent-benchmark"
     )
 
+
+def test_in_memory_repository_saves_ingestion_job_records() -> None:
+    repository = InMemoryStorageRepository()
+    job_record = IngestionJobRecord(
+        job_id="ingest_synthetic_fund_seed_001",
+        dataset_name="synthetic_fund_seed",
+        source_ids=("synthetic_fund_records", "finagent_benchmark_sample"),
+        status="completed",
+        document_count=13,
+        structured_record_count=7,
+        eval_case_count=10,
+        started_at=NOW,
+        finished_at=NOW,
+    )
+
+    repository.save_ingestion_job_record(job_record)
+
+    assert repository.list_ingestion_job_records() == (job_record,)

@@ -24,6 +24,21 @@ def _require_list(field_name: str, value: list[Any]) -> None:
         raise ModelValidationError(f"{field_name} must be a list")
 
 
+def _require_non_negative_integer(field_name: str, value: int) -> None:
+    if not isinstance(value, int) or value < 0:
+        raise ModelValidationError(f"{field_name} must be a non-negative integer")
+
+
+def _require_string_tuple(field_name: str, value: tuple[str, ...]) -> None:
+    if not isinstance(value, tuple) or not all(
+        isinstance(item, str) and item.strip() for item in value
+    ):
+        raise ModelValidationError(f"{field_name} must be a tuple of non-empty strings")
+
+
+INGESTION_JOB_STATUSES = {"running", "completed", "failed"}
+
+
 @dataclass(frozen=True)
 class Document:
     document_id: str
@@ -161,3 +176,53 @@ class EvalCase:
         if self.metadata:
             eval_case["metadata"] = dict(self.metadata)
         return eval_case
+
+
+@dataclass(frozen=True)
+class IngestionJobRecord:
+    job_id: str
+    dataset_name: str
+    source_ids: tuple[str, ...]
+    status: str
+    document_count: int
+    structured_record_count: int
+    eval_case_count: int
+    started_at: datetime
+    finished_at: datetime | None = None
+    error_message: str | None = None
+
+    def __post_init__(self) -> None:
+        _require_non_empty_string("job_id", self.job_id)
+        _require_non_empty_string("dataset_name", self.dataset_name)
+        _require_string_tuple("source_ids", self.source_ids)
+        if self.status not in INGESTION_JOB_STATUSES:
+            raise ModelValidationError(
+                f"status must be one of: {', '.join(sorted(INGESTION_JOB_STATUSES))}"
+            )
+        _require_non_negative_integer("document_count", self.document_count)
+        _require_non_negative_integer("structured_record_count", self.structured_record_count)
+        _require_non_negative_integer("eval_case_count", self.eval_case_count)
+        if not isinstance(self.started_at, datetime):
+            raise ModelValidationError("started_at must be a datetime")
+        if self.finished_at is not None and not isinstance(self.finished_at, datetime):
+            raise ModelValidationError("finished_at must be a datetime or None")
+        if self.error_message is not None:
+            _require_non_empty_string("error_message", self.error_message)
+        if self.status == "failed" and self.error_message is None:
+            raise ModelValidationError("failed ingestion job records require error_message")
+        if self.status == "completed" and self.finished_at is None:
+            raise ModelValidationError("completed ingestion job records require finished_at")
+
+    def to_mapping(self) -> dict[str, Any]:
+        return {
+            "job_id": self.job_id,
+            "dataset_name": self.dataset_name,
+            "source_ids": list(self.source_ids),
+            "status": self.status,
+            "document_count": self.document_count,
+            "structured_record_count": self.structured_record_count,
+            "eval_case_count": self.eval_case_count,
+            "started_at": self.started_at.isoformat(),
+            "finished_at": self.finished_at.isoformat() if self.finished_at else None,
+            "error_message": self.error_message,
+        }
