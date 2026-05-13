@@ -318,44 +318,6 @@ Out of scope for the next Data Engineering Agent:
 - LangGraph workflow execution
 - MCP Gateway and MCP tools
 
-### Planned Checkpoint: Canonical Ingestion To Storage Persistence
-
-Return To: Ingestion / Backend Agent
-
-Status: `planned`
-
-### Trigger
-
-Start this checkpoint after local and first external sample normalization are stable enough that schema churn is low.
-
-Minimum trigger conditions:
-
-- Synthetic seed ingestion passes end to end.
-- First external sample batch normalizes through the same ingestion path.
-- Canonical `Document`, `StructuredRecord`, and `EvalCase` fields are stable.
-- Data quality checks cover missing fields, duplicate source identifiers, broken citations, and unsupported task types.
-
-### Goal
-
-Move from in-memory canonical normalization toward durable ingestion storage while preserving auditability and replay.
-
-### Suggested First Task
-
-Design the repository boundary between canonical ingestion outputs and storage models before adding database writes.
-
-### Acceptance Criteria
-
-- Canonical objects can be mapped to planned PostgreSQL entities without losing citation or audit metadata.
-- Ingestion job records include source identifiers, dataset name, counts, status, errors, and timestamps.
-- Storage work remains testable locally and does not require an LLM provider.
-- PostgreSQL/pgvector integration is introduced behind clear repository or indexer interfaces.
-
-### Known Gaps Or Out Of Scope
-
-- Do not wire the full `POST /ingestion/jobs` API until the repository boundary is clear.
-- Do not generate embeddings or build pgvector indexes before document chunking behavior is agreed.
-- Do not implement MCP Gateway, LangGraph workflows, or research answer generation in this checkpoint.
-
 ## Handoff 2026-05-11-2041Z: Phase 0 Runtime Foundation
 
 From: Foundation / DevOps Agent
@@ -711,3 +673,82 @@ Begin the planned storage persistence checkpoint by designing the repository bou
 - No document chunking, embedding, or pgvector indexing has been added yet.
 - No FastAPI ingestion route, MCP Gateway, MCP tools, or LangGraph workflow changes were made in this handoff.
 - `data/external/raw/` remains intentionally untracked.
+
+## Handoff 2026-05-13-1634Z: Canonical Ingestion Storage Boundary
+
+From: Ingestion / Backend Agent
+
+To: Ingestion / Backend Agent
+
+Status: `ready`
+
+### Goal
+
+Complete the planned `Canonical Ingestion To Storage Persistence` checkpoint by creating a durable-storage boundary for canonical ingestion outputs without introducing PostgreSQL writes yet.
+
+### Completed Work
+
+Implemented storage boundary artifacts:
+
+- `storage/repository.py`
+- `StorageRepository` protocol
+- `InMemoryStorageRepository`
+- `IngestionJobRecord`
+- `IngestionRunResult`
+- `run_seed_ingestion(repo_root, repository, started_at=None)`
+
+The repository boundary now accepts and returns:
+
+- `Document`
+- `StructuredRecord`
+- `EvalCase`
+- `IngestionJobRecord`
+
+The seed ingestion orchestration now:
+
+- loads the current manifest-driven seed dataset
+- writes structured records, documents, and eval cases through the repository boundary
+- records completed ingestion job counts and source IDs
+- records failed ingestion jobs with error messages before re-raising the original exception
+
+### Verification Evidence
+
+Final verification command:
+
+```bash
+python3 -m pytest tests
+```
+
+Latest verified result:
+
+```text
+54 passed
+```
+
+Related commits:
+
+- `13b6206` Add storage repository boundary
+- `3ebde32` Add ingestion job storage records
+- `7e525e6` Persist seed ingestion through repository
+- `79fba03` Cover storage repository audit metadata
+- `f8e5485` Protect ingestion storage runtime boundary
+
+### Acceptance Criteria Satisfied
+
+- Canonical objects can be mapped into a storage repository boundary without losing citation or audit metadata.
+- Ingestion job records include source identifiers, dataset name, counts, status, errors, and timestamps.
+- Storage work remains testable locally and does not require an LLM provider.
+- PostgreSQL/pgvector integration remains deferred behind repository/indexer interfaces.
+- Runtime boundary tests confirm ingestion/storage do not import FastAPI or `api.main`.
+
+### Suggested First Task
+
+Continue within Ingestion / Backend Agent if the next goal is PostgreSQL repository implementation, or hand to API / Workflow Agent if the next goal is a `POST /ingestion/jobs` route over the existing repository boundary.
+
+### Known Gaps Or Out Of Scope
+
+- No actual PostgreSQL persistence has been implemented yet.
+- No migrations or SQLAlchemy-style database mappings have been added yet.
+- No document chunking, embedding, or pgvector indexing has been added yet.
+- No FastAPI ingestion route has been added yet.
+- No MCP Gateway, MCP tools, or LangGraph workflow changes were made in this handoff.
