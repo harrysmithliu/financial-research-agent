@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from pathlib import Path
 
-from ingestion.jobs import load_seed_dataset
+from ingestion.jobs import load_seed_dataset, run_seed_ingestion
 from storage.models import IngestionJobRecord
 from storage.repository import InMemoryStorageRepository
 
@@ -81,3 +81,93 @@ def test_in_memory_repository_saves_ingestion_job_records() -> None:
     repository.save_ingestion_job_record(job_record)
 
     assert repository.list_ingestion_job_records() == (job_record,)
+
+
+def test_repository_retains_fund_record_fields_needed_for_structured_lookup() -> None:
+    repository = InMemoryStorageRepository()
+
+    run_seed_ingestion(REPO_ROOT, repository, started_at=NOW)
+
+    fund_record = next(
+        record
+        for record in repository.list_structured_records()
+        if record.record_type == "fund" and record.values["fund_id"] == "FUND_A"
+    )
+
+    assert fund_record.source_uri == "data/sample_funds/funds.json"
+    assert fund_record.metadata == {
+        "dataset_name": "synthetic_fund_seed",
+        "source_record_index": 0,
+    }
+    assert fund_record.values["name"] == "Northstar Growth Fund"
+    assert fund_record.values["category"] == "US Equity"
+    assert fund_record.values["expense_ratio"] == 0.65
+    assert fund_record.values["volatility"] == 15.2
+
+
+def test_repository_retains_issue_comment_document_parentage_for_citations() -> None:
+    repository = InMemoryStorageRepository()
+
+    run_seed_ingestion(REPO_ROOT, repository, started_at=NOW)
+
+    comment_document = next(
+        document
+        for document in repository.list_documents()
+        if document.document_id == "doc_issue_openbb_like_001_comment_001"
+    )
+
+    assert comment_document.source_type == "github_issue_comment"
+    assert comment_document.source_uri.endswith(
+        "#comment-issue_openbb_like_001_comment_001"
+    )
+    assert comment_document.metadata["dataset_name"] == "synthetic_fund_seed"
+    assert comment_document.metadata["issue_id"] == "issue_openbb_like_001"
+    assert comment_document.metadata["comment_id"] == (
+        "issue_openbb_like_001_comment_001"
+    )
+    assert comment_document.metadata["parent_source_uri"] == (
+        "https://github.com/synthetic-finance/openbb-like-platform/issues/101"
+    )
+
+
+def test_repository_retains_finagent_eval_metadata_for_replay() -> None:
+    repository = InMemoryStorageRepository()
+
+    run_seed_ingestion(REPO_ROOT, repository, started_at=NOW)
+
+    eval_case = next(
+        case
+        for case in repository.list_eval_cases()
+        if case.case_id == "finagent_ADV_001"
+    )
+
+    assert eval_case.expected_answer == "NOT_AVAILABLE"
+    assert eval_case.metadata["dataset_name"] == "synthetic_fund_seed"
+    assert eval_case.metadata["source_uri"] == (
+        "data/external/finagent_benchmark_sample.json"
+    )
+    assert eval_case.metadata["source_metadata"]["source_record_id"] == "ADV_001"
+    assert eval_case.metadata["source_metadata"]["source_type"] == "adversarial"
+    assert eval_case.metadata["source_metadata"]["verification_note"] == (
+        "HUMAN_VERIFIED_ORIGINAL_CONFIRMED"
+    )
+
+
+def test_repository_retains_ingestion_job_source_ids_for_audit() -> None:
+    repository = InMemoryStorageRepository()
+
+    run_seed_ingestion(REPO_ROOT, repository, started_at=NOW)
+
+    job_record = repository.list_ingestion_job_records()[0]
+
+    assert job_record.job_id == "ingest_synthetic_fund_seed_0.1.0"
+    assert job_record.source_ids == (
+        "synthetic_fund_records",
+        "fund_a_factsheet",
+        "fund_b_factsheet",
+        "fund_c_factsheet",
+        "fund_d_factsheet",
+        "synthetic_platform_issues",
+        "fund_eval_cases",
+        "finagent_benchmark_sample",
+    )
