@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
+from ingestion.chunker import chunk_documents
 from ingestion.loaders import (
     Manifest,
     ResolvedManifestSource,
@@ -15,7 +16,13 @@ from ingestion.normalizers import (
     normalize_issue_records_file,
     normalize_markdown_document_file,
 )
-from storage.models import Document, EvalCase, IngestionJobRecord, StructuredRecord
+from storage.models import (
+    Document,
+    DocumentChunk,
+    EvalCase,
+    IngestionJobRecord,
+    StructuredRecord,
+)
 from storage.repository import StorageRepository
 
 
@@ -29,6 +36,7 @@ class IngestionResult:
     resolved_sources: tuple[ResolvedManifestSource, ...]
     fund_records: tuple[StructuredRecord, ...]
     documents: tuple[Document, ...]
+    document_chunks: tuple[DocumentChunk, ...]
     issue_records: tuple[StructuredRecord, ...]
     eval_cases: tuple[EvalCase, ...]
 
@@ -54,6 +62,7 @@ def run_seed_ingestion(
         ingestion_result = load_seed_dataset(repo_root)
         repository.save_structured_records(ingestion_result.structured_records)
         repository.save_documents(ingestion_result.documents)
+        repository.save_document_chunks(ingestion_result.document_chunks)
         repository.save_eval_cases(ingestion_result.eval_cases)
         job_record = _build_ingestion_job_record(
             ingestion_result,
@@ -146,6 +155,7 @@ def load_seed_dataset(repo_root: str | Path) -> IngestionResult:
         resolved_sources=resolved_sources,
         fund_records=tuple(fund_records),
         documents=tuple(documents),
+        document_chunks=chunk_documents(tuple(documents)),
         issue_records=tuple(issue_records),
         eval_cases=tuple(eval_cases),
     )

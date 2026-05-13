@@ -21,6 +21,7 @@ def test_load_seed_dataset_runs_end_to_end_without_external_services() -> None:
     assert len(result.fund_records) == 4
     assert len(result.issue_records) == 3
     assert len(result.documents) == 13
+    assert len(result.document_chunks) == 17
     assert len(result.eval_cases) == 10
     assert len(result.structured_records) == 7
 
@@ -82,6 +83,7 @@ def test_run_seed_ingestion_persists_outputs_and_completed_job_record() -> None:
 
     assert len(repository.list_structured_records()) == 7
     assert len(repository.list_documents()) == 13
+    assert len(repository.list_document_chunks()) == 17
     assert len(repository.list_eval_cases()) == 10
     assert repository.list_ingestion_job_records() == (run_result.job_record,)
     assert run_result.job_record.status == "completed"
