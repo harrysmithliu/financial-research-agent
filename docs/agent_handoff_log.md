@@ -27,15 +27,15 @@ Return To: Agent / Role
 
 Status: `planned`
 
-Trigger:
+#### Trigger
 
-Goal:
+#### Goal
 
-Suggested First Task:
+#### Suggested First Task
 
-Acceptance Criteria:
+#### Acceptance Criteria
 
-Known Gaps Or Out Of Scope:
+#### Known Gaps Or Out Of Scope
 ```
 
 The nested planned checkpoint should follow this format and describe the future work owner, trigger conditions, goal, suggested first task, acceptance criteria, and known gaps or out-of-scope work.
@@ -559,53 +559,6 @@ This handoff is complete when:
 - Do not start large-scale Hugging Face mirroring.
 - Do not add TAT-QA yet; prove the first external sample path first.
 
-### Planned Checkpoint: External Ingestion Stable To Next Data Expansion
-
-Return To: Data Engineering Agent
-
-Status: `planned`
-
-#### Trigger
-
-Start this checkpoint after Ingestion / Backend Agent has hardened the first external FinAgent sample path.
-
-Minimum trigger conditions:
-
-- Existing synthetic seed ingestion remains stable.
-- The FinAgent sample has deterministic normalizer or ingestion tests.
-- External provenance from `source_metadata` is either preserved in canonical models or explicitly deferred with rationale.
-- The `huggingface_dataset` source type decision is implemented or explicitly deferred with rationale.
-- Adversarial `NOT_AVAILABLE` behavior is covered by tests.
-- `python3 -m pytest` passes.
-
-#### Goal
-
-Return to data expansion after the first external sample is stable, and add the next small curated dataset batch without broadening scope prematurely.
-
-#### Suggested First Task
-
-Read the latest ingestion hardening handoff, confirm whether the trigger conditions are satisfied, then choose the next data expansion slice.
-
-Preferred next candidates:
-
-- TAT-QA tiny sample for table/text financial QA, or
-- a small real GitHub issue/comment sample from OpenBB or QuantConnect Lean.
-
-#### Acceptance Criteria
-
-- The next external batch is small enough for manual review.
-- Source provenance, license, sample size, and retrieval method are documented.
-- `data/manifest.json` and `data/README.md` are updated.
-- New records map cleanly to existing canonical data formats or clearly identify required schema changes.
-- No real client data, credentials, live trading data, or unsafe investment advice is introduced.
-
-#### Known Gaps Or Out Of Scope
-
-- Do not start large-scale Hugging Face mirroring.
-- Do not start unbounded GitHub crawling.
-- Do not add storage persistence, FastAPI routes, MCP Gateway, or LangGraph workflow code from this checkpoint.
-- Keep the next data expansion reversible and easy to inspect.
-
 ## Handoff 2026-05-12-1858Z: FinAgent Ingestion Hardening Complete
 
 From: Ingestion / Backend Agent
@@ -862,3 +815,93 @@ API / Workflow Agent can work in parallel after reading this handoff by wrapping
 - No MCP Gateway tools or LangGraph workflow changes were made in this handoff.
 - The local host Python environment used for verification did not have `ruff` installed, so lint was not run.
 - The Postgres runner is covered by fake-connection tests; a live Docker Compose PostgreSQL write/read smoke test remains for a later runtime verification pass.
+
+### Planned Checkpoint: Postgres Runtime Smoke Test
+
+Return To: Foundation / DevOps Agent
+
+Status: `planned`
+
+#### Trigger
+
+Start this checkpoint after the PostgreSQL ingestion and retrieval runtime paths are stable enough that a live Docker Compose smoke test will provide meaningful signal.
+
+Minimum trigger conditions:
+
+- `run_seed_ingestion_to_postgres` remains the canonical seed ingestion runner for PostgreSQL-backed storage.
+- The storage migration file is present and expected to initialize ingestion jobs, documents, document chunks, structured records, and eval cases.
+- RAG / Retrieval Agent has either started or completed a retrieval boundary over stored `DocumentChunk` records.
+- Runtime verification needs to confirm real PostgreSQL writes and reads rather than fake-connection behavior only.
+- Docker Compose remains the intended local runtime for API, PostgreSQL/pgvector, and Redis.
+
+#### Goal
+
+Verify the live local runtime path for PostgreSQL-backed ingestion and decide whether CI should grow a PostgreSQL integration job.
+
+#### Suggested First Task
+
+Start the Docker Compose stack, run the storage migrations and `run_seed_ingestion_to_postgres` against the Compose PostgreSQL service, then verify persisted counts for ingestion jobs, structured records, documents, document chunks, and eval cases.
+
+#### Acceptance Criteria
+
+- Docker Compose starts PostgreSQL/pgvector, Redis, and API successfully.
+- The live PostgreSQL database applies ingestion storage migrations.
+- `run_seed_ingestion_to_postgres` completes successfully against the Compose database.
+- Persisted row counts match the deterministic seed ingestion counts or document any intentional changes.
+- A live read path confirms stored `DocumentChunk` records can be hydrated with `chunk_id`, `document_id`, `source_uri`, metadata, and embedding placeholder state.
+- The runtime verification result is recorded in the relevant acceptance or handoff document.
+- A clear decision is made on whether to add a PostgreSQL service-backed CI job now or defer it.
+
+#### Known Gaps Or Out Of Scope
+
+- Do not implement retrieval ranking or model-backed embeddings in this checkpoint.
+- Do not add MCP Gateway or LangGraph runtime code in this checkpoint.
+- Do not introduce paid cloud services.
+- Keep the smoke test small, deterministic, and suitable for local developer use.
+
+### Planned Checkpoint: Retrieval Baseline Stable To Next Data Expansion
+
+Return To: Data Engineering Agent
+
+Status: `planned`
+
+#### Trigger
+
+Start this checkpoint after RAG / Retrieval Agent has a baseline retrieval path over stored `DocumentChunk` records.
+
+Minimum trigger conditions:
+
+- Stored document chunks can be queried through a retrieval boundary.
+- An embedding adapter, deterministic test embedding, or retrieval index path exists.
+- Retrieval results preserve `chunk_id`, `document_id`, `source_uri`, and citation metadata.
+- Baseline retrieval tests pass.
+- At least synthetic fund factsheet chunks and FinAgent evidence-related chunks can be retrieved or inspected through the retrieval path.
+
+#### Goal
+
+Return to data expansion after retrieval quality can be tested, so the next external dataset batch can immediately exercise chunking, retrieval, citation, and evaluation behavior.
+
+#### Suggested First Task
+
+Read the latest retrieval handoff, confirm the trigger conditions are satisfied, then choose the next small curated data expansion slice.
+
+Preferred next candidates:
+
+- TAT-QA tiny sample for table/text financial QA and numerical reasoning.
+- A small real GitHub issue/comment sample from OpenBB or QuantConnect Lean for platform issue research.
+
+#### Acceptance Criteria
+
+- The next external batch is small enough for manual review.
+- Source provenance, license, sample size, and retrieval method are documented.
+- `data/manifest.json` and `data/README.md` are updated.
+- New records map cleanly to existing canonical data formats or clearly identify required schema changes.
+- New samples can be used to test retrieval recall, citation metadata preservation, or issue/document search behavior.
+- No real client data, credentials, live trading data, or unsafe investment advice is introduced.
+
+#### Known Gaps Or Out Of Scope
+
+- Do not start large-scale Hugging Face mirroring.
+- Do not start unbounded GitHub crawling.
+- Do not add storage persistence, FastAPI routes, MCP Gateway, or LangGraph workflow code from this checkpoint.
+- Keep the next data expansion reversible and easy to inspect.
