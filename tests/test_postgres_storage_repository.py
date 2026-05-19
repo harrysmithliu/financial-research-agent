@@ -88,8 +88,10 @@ def test_postgres_repository_writes_document_chunks_with_payload() -> None:
     assert params[1] == "doc_fund_a_factsheet"
     assert params[2] == 0
     assert params[5] is None
-    assert _jsonb_value(params[6])["dataset_name"] == "synthetic_fund_seed"
-    assert _jsonb_value(params[7])["chunk_id"] == "chunk_doc_fund_a_factsheet_000"
+    assert params[6] is None
+    assert params[7] is None
+    assert _jsonb_value(params[8])["dataset_name"] == "synthetic_fund_seed"
+    assert _jsonb_value(params[9])["chunk_id"] == "chunk_doc_fund_a_factsheet_000"
 
 
 def test_postgres_repository_writes_document_chunk_embedding_as_jsonb() -> None:
@@ -110,7 +112,9 @@ def test_postgres_repository_writes_document_chunk_embedding_as_jsonb() -> None:
     _, params = connection.calls[0]
 
     assert _jsonb_value(params[5]) == [0.1, 0.2, 0.3]
-    assert _jsonb_value(params[7])["embedding"] == [0.1, 0.2, 0.3]
+    assert params[6] == "[0.1,0.2,0.3]"
+    assert params[7] == "[0.1,0.2,0.3]"
+    assert _jsonb_value(params[9])["embedding"] == [0.1, 0.2, 0.3]
 
 
 def test_postgres_repository_writes_structured_records_with_stable_key() -> None:
@@ -301,6 +305,9 @@ def test_ingestion_storage_schema_declares_expected_tables() -> None:
     schema = (
         REPO_ROOT / "storage/migrations/001_ingestion_storage.sql"
     ).read_text(encoding="utf-8")
+    vector_migration = (
+        REPO_ROOT / "storage/migrations/002_document_chunk_embedding_vector.sql"
+    ).read_text(encoding="utf-8")
 
     assert "CREATE TABLE IF NOT EXISTS ingestion_job_records" in schema
     assert "CREATE TABLE IF NOT EXISTS documents" in schema
@@ -308,3 +315,4 @@ def test_ingestion_storage_schema_declares_expected_tables() -> None:
     assert "CREATE TABLE IF NOT EXISTS structured_records" in schema
     assert "CREATE TABLE IF NOT EXISTS evaluation_cases" in schema
     assert "JSONB" in schema
+    assert "ADD COLUMN IF NOT EXISTS embedding_vector vector(512)" in vector_migration

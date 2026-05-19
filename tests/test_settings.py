@@ -14,6 +14,8 @@ def test_settings_defaults_are_local_development_safe() -> None:
     assert settings.database_url == DEFAULT_DATABASE_URL
     assert settings.redis_url == DEFAULT_REDIS_URL
     assert settings.request_id_header == "x-request-id"
+    assert settings.retrieval_embedding_dimension == 512
+    assert settings.retrieval_top_k == 5
 
 
 def test_settings_load_from_environment(monkeypatch) -> None:
@@ -25,6 +27,8 @@ def test_settings_load_from_environment(monkeypatch) -> None:
     monkeypatch.setenv("DATABASE_URL", "postgresql://user:pass@db:5432/app")
     monkeypatch.setenv("REDIS_URL", "redis://redis:6379/1")
     monkeypatch.setenv("REQUEST_ID_HEADER", "X-Correlation-ID")
+    monkeypatch.setenv("RETRIEVAL_EMBEDDING_DIMENSION", "768")
+    monkeypatch.setenv("RETRIEVAL_TOP_K", "8")
 
     settings = Settings.from_env()
 
@@ -36,3 +40,5 @@ def test_settings_load_from_environment(monkeypatch) -> None:
     assert settings.database_url == "postgresql://user:pass@db:5432/app"
     assert settings.redis_url == "redis://redis:6379/1"
     assert settings.request_id_header == "x-correlation-id"
+    assert settings.retrieval_embedding_dimension == 768
+    assert settings.retrieval_top_k == 8

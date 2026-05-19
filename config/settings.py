@@ -29,6 +29,8 @@ class Settings:
     database_url: str = DEFAULT_DATABASE_URL
     redis_url: str = DEFAULT_REDIS_URL
     request_id_header: str = "x-request-id"
+    retrieval_embedding_dimension: int = 512
+    retrieval_top_k: int = 5
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -44,6 +46,13 @@ class Settings:
                 "REQUEST_ID_HEADER",
                 cls.request_id_header,
             ).lower(),
+            retrieval_embedding_dimension=int(
+                _read_env(
+                    "RETRIEVAL_EMBEDDING_DIMENSION",
+                    str(cls.retrieval_embedding_dimension),
+                )
+            ),
+            retrieval_top_k=int(_read_env("RETRIEVAL_TOP_K", str(cls.retrieval_top_k))),
         )
 
 

@@ -70,6 +70,11 @@ class PostgresStorageRepository:
             embedding = (
                 _jsonb_param(chunk.embedding) if chunk.embedding is not None else None
             )
+            embedding_vector = (
+                _embedding_vector_literal(chunk.embedding)
+                if chunk.embedding is not None
+                else None
+            )
             self.connection.execute(
                 """
                 INSERT INTO document_chunks (
@@ -79,16 +84,31 @@ class PostgresStorageRepository:
                     text,
                     source_uri,
                     embedding,
+                    embedding_vector,
                     metadata,
                     payload
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES (
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    CASE
+                        WHEN %s IS NULL THEN NULL
+                        ELSE %s::vector
+                    END,
+                    %s,
+                    %s
+                )
                 ON CONFLICT (chunk_id) DO UPDATE SET
                     document_id = EXCLUDED.document_id,
                     chunk_index = EXCLUDED.chunk_index,
                     text = EXCLUDED.text,
                     source_uri = EXCLUDED.source_uri,
                     embedding = EXCLUDED.embedding,
+                    embedding_vector = EXCLUDED.embedding_vector,
                     metadata = EXCLUDED.metadata,
                     payload = EXCLUDED.payload
                 """,
@@ -99,6 +119,8 @@ class PostgresStorageRepository:
                     chunk.text,
                     chunk.source_uri,
                     embedding,
+                    embedding_vector,
+                    embedding_vector,
                     _jsonb_param(chunk.metadata),
                     _jsonb_param(payload),
                 ),
@@ -303,6 +325,13 @@ def _jsonb_param(value: Any) -> Any:
         return value
 
     return Jsonb(value)
+
+
+def _embedding_vector_literal(values: list[float]) -> str:
+    if not values:
+        raise ValueError("embedding vectors must not be empty")
+    joined = ",".join(str(value) for value in values)
+    return f"[{joined}]"
 
 
 def _row_payload(row: Any) -> dict[str, Any]:
