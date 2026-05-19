@@ -1,13 +1,17 @@
 from __future__ import annotations
 
-from typing import Any, Callable
+from typing import Any, Callable, Protocol
 
 from mcp_gateway.errors import McpToolError, ToolErrorCode
 from mcp_gateway.hooks import ToolContext
 from mcp_gateway.schemas import DocumentRetrievalRequest
-from retrieval.service import RetrievalService
 
 TOOL_NAME = "document_retrieval"
+
+
+class RetrievalSearchService(Protocol):
+    def search(self, query: str, *, top_k: int | None = None) -> Any:
+        ...
 
 
 def handle_document_retrieval_unavailable(
@@ -24,7 +28,7 @@ def handle_document_retrieval_unavailable(
 
 
 def build_document_retrieval_handler(
-    retrieval_service: RetrievalService,
+    retrieval_service: RetrievalSearchService,
 ) -> Callable[[ToolContext, dict[str, Any]], dict[str, Any]]:
     def handle_document_retrieval(
         context: ToolContext,

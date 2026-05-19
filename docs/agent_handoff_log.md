@@ -744,3 +744,80 @@ Local commits produced in this retrieval phase:
 - Keep retrieval metadata contracts stable (`chunk_id`, `document_id`, `source_uri`, `metadata`) while expanding dataset coverage.
 - Keep embedding dimension alignment explicit between provider output and `document_chunks.embedding_vector`.
 - Keep retrieval quality changes measurable through `eval/retrieval_metrics.py` and deterministic tests before expanding workflow surface.
+
+## Handoff 2026-05-19-2106Z: MCP Retrieval Flow Wired Through API Workflow
+
+From: API / Workflow Agent
+
+To: MCP Gateway / Tooling Agent, Guardrails / Evaluation Agent
+
+### Completions
+
+Completed the first end-to-end API workflow path for research requests using MCP `document_retrieval` tool boundaries.
+
+Implemented in incremental local commits:
+
+- `document_retrieval` tool request/response contracts and structured tool error model.
+- MCP Gateway route skeleton with permission checker, rate-limit hook, cache hook, request ID propagation, and per-call audit records.
+- `document_retrieval` handler wiring to retrieval service search path with validation/error mapping.
+- Research workflow entry point that retrieves evidence only via gateway tool invocation.
+- `POST /research` route with typed request/response schema and tool-error-to-HTTP status mapping.
+- End-to-end regression coverage for `API -> workflow -> MCP gateway -> document_retrieval tool`.
+
+Verification:
+
+- `python3 -m pytest tests`
+- result: `106 passed`
+
+### Inputs
+
+- API / Workflow responsibilities and boundaries from `AGENTS.md`.
+- Product contracts and runtime chain requirements from `README.md`.
+- Retrieval baseline handoff guidance from `docs/agent_handoff_log.md` (`Handoff 2026-05-19-1912Z`), especially:
+  - integrate retrieval through MCP `document_retrieval` tool boundary
+  - keep retrieval citation metadata contracts stable
+
+### Outputs
+
+Code artifacts:
+
+- `mcp_gateway/errors.py`
+- `mcp_gateway/schemas.py`
+- `mcp_gateway/audit.py`
+- `mcp_gateway/hooks.py`
+- `mcp_gateway/gateway.py`
+- `mcp_gateway/factory.py`
+- `mcp_gateway/tools/document_retrieval.py`
+- `agents/research_workflow.py`
+- `api/routes/research.py`
+- `api/main.py` updates for workflow wiring
+
+Test artifacts:
+
+- `tests/test_mcp_tool_contracts.py`
+- `tests/test_mcp_gateway.py`
+- `tests/test_mcp_document_retrieval_tool.py`
+- `tests/test_research_workflow.py`
+- `tests/test_research_api.py`
+- `tests/test_research_e2e_mcp_path.py`
+
+Behavior contracts now enforced:
+
+- request ID propagates from API request to MCP tool calls and audit records
+- retrieval evidence returned with `chunk_id`, `document_id`, `source_uri`, `metadata`
+- `POST /research` maps tool errors to stable HTTP statuses (`422/403/429/503/500`)
+
+### Suggestions
+
+- MCP Gateway / Tooling Agent:
+  - align gateway audit record schema with broader tool-call audit requirements (input hash, output refs, latency, cache hit/miss) before additional tools are added.
+  - replace no-op cache/rate-limit hooks with concrete adapters once Redis-backed policies are finalized.
+- Guardrails / Evaluation Agent:
+  - insert citation coverage, faithfulness, moderation, and unsafe-financial-advice checks after workflow retrieval and before final output approval.
+  - add blocked-output regression tests through `POST /research` once guardrail pipeline nodes are wired.
+
+### Expectations
+
+- Continue expanding research workflow through MCP tool boundaries only; avoid direct retrieval internals from API routes.
+- Preserve tool and citation metadata contracts while adding more tools (`fund_metrics`, `citation_validator`, etc.).
+- Keep request-traceability and auditability intact for every new workflow node and tool call.
