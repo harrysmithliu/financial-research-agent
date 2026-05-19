@@ -661,24 +661,86 @@ API / Workflow Agent can run in parallel by wrapping `run_seed_ingestion_to_post
 - Keep retrieval/storage work decoupled from MCP Gateway and LangGraph runtime expansion in this phase.
 - Embedding provider adapter, pgvector search path, and live Docker Compose PostgreSQL smoke verification remain next-phase tasks.
 
-### Planned Checkpoint: Postgres Runtime Smoke Test
+## Handoff 2026-05-19-1912Z: Retrieval Baseline Over Stored Chunks
 
-Return To: Foundation / DevOps Agent
+From: RAG / Retrieval Agent
 
-#### Trigger
+To: Data Engineering Agent, API / Workflow Agent, Foundation / DevOps Agent
 
-- `run_seed_ingestion_to_postgres` remains the canonical seed ingestion runner for PostgreSQL-backed storage.
-- Storage migrations for ingestion jobs, documents, document chunks, structured records, and eval cases are in place.
-- Retrieval work over stored `DocumentChunk` records has started.
-- Runtime verification needs live Docker Compose PostgreSQL write/read checks beyond fake-connection tests.
+### Completions
 
-### Planned Checkpoint: Retrieval Baseline Stable To Next Data Expansion
+Completed the first retrieval baseline over PostgreSQL-stored `DocumentChunk` records with deterministic embedding support, pgvector-ready storage shape, vector retrieval query path, and retrieval metric evaluation utilities.
 
-Return To: Data Engineering Agent
+Delivered runtime-backed smoke evidence in Docker Compose:
 
-#### Trigger
+- `api`, `postgres`, and `redis` all healthy
+- `run_seed_ingestion_to_postgres` completed
+- persisted deterministic counts verified:
+  - `structured_records=7`
+  - `documents=13`
+  - `document_chunks=17`
+  - `eval_cases=10`
+- chunk readback preserved citation-critical fields:
+  - `chunk_id`
+  - `document_id`
+  - `source_uri`
+  - `metadata`
 
-- Stored document chunks can be queried through a retrieval boundary.
-- An embedding adapter or retrieval index path exists.
-- Retrieval results preserve `chunk_id`, `document_id`, `source_uri`, and citation metadata.
-- Baseline retrieval tests pass.
+### Inputs
+
+- `## Handoff 2026-05-13-2330Z: Ingestion Storage Ready For Retrieval`
+- canonical ingestion/storage persistence path with deterministic chunk outputs
+- requirement to preserve citation/provenance metadata end to end
+- approved baseline thresholds:
+  - Recall@5 >= 0.70
+  - MRR@5 >= 0.45
+  - Citation Coverage >= 0.80
+
+### Outputs
+
+Code artifacts:
+
+- `storage/migrations/002_document_chunk_embedding_vector.sql`
+- `storage/postgres.py` dual-write for `embedding` (JSONB) and `embedding_vector` (`vector(512)`)
+- `retrieval/embeddings.py`
+- `retrieval/postgres.py`
+- `retrieval/service.py`
+- `eval/retrieval_metrics.py`
+
+Test artifacts:
+
+- `tests/test_retrieval_embeddings.py`
+- `tests/test_retrieval_postgres.py`
+- `tests/test_retrieval_metrics.py`
+
+Documentation artifacts:
+
+- `docs/retrieval/embedding_provider_selection.md`
+- `docs/retrieval/retrieval_baseline.md`
+- `docs/retrieval/retrieval_evaluation.md`
+- `docs/retrieval/retrieval_runbook.md`
+
+Verified test status after retrieval baseline implementation:
+
+- `python3 -m pytest tests` -> `91 passed`
+
+Local commits produced in this retrieval phase:
+
+- `3d2e869` docs: add retrieval baseline planning docs
+- `0c87d01` feat: add pgvector retrieval baseline and dual-write column
+- `4886fed` feat: add retrieval quality metrics and threshold evaluation
+
+### Suggestions
+
+- Data Engineering Agent:
+  - start the next small curated external slice (recommended: TAT-QA tiny) and validate retrieval recall deltas against the new baseline utilities
+- API / Workflow Agent:
+  - integrate retrieval service through MCP `document_retrieval` tool boundary before exposing direct API-level retrieval internals
+- Foundation / DevOps Agent:
+  - decide whether Docker image should include `data/` for smoke runs or keep the explicit `docker compose cp data api:/app/data` step in runbook
+
+### Expectations
+
+- Keep retrieval metadata contracts stable (`chunk_id`, `document_id`, `source_uri`, `metadata`) while expanding dataset coverage.
+- Keep embedding dimension alignment explicit between provider output and `document_chunks.embedding_vector`.
+- Keep retrieval quality changes measurable through `eval/retrieval_metrics.py` and deterministic tests before expanding workflow surface.
