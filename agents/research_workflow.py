@@ -19,7 +19,12 @@ class DocumentRetrievalGateway(Protocol):
     def invoke_document_retrieval(
         self,
         request: DocumentRetrievalRequest,
-    ) -> DocumentRetrievalResponse:
+        ) -> DocumentRetrievalResponse:
+        ...
+
+
+class ResearchWorkflowRunner(Protocol):
+    def run(self, request: ResearchWorkflowRequest) -> ResearchWorkflowResult:
         ...
 
 
