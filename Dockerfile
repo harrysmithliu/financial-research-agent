@@ -11,6 +11,7 @@ COPY pyproject.toml README.md LICENSE ./
 COPY agents ./agents
 COPY api ./api
 COPY config ./config
+COPY data ./data
 COPY eval ./eval
 COPY ingestion ./ingestion
 COPY llm ./llm

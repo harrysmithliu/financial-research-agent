@@ -688,7 +688,7 @@ Delivered runtime-backed smoke evidence in Docker Compose:
 
 ### Inputs
 
-- `## Handoff 2026-05-13-2330Z: Ingestion Storage Ready For Retrieval`
+- `Ingestion Storage Ready For Retrieval`
 - canonical ingestion/storage persistence path with deterministic chunk outputs
 - requirement to preserve citation/provenance metadata end to end
 - approved baseline thresholds:

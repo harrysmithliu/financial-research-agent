@@ -75,8 +75,26 @@ class PostgresStorageRepository:
                 if chunk.embedding is not None
                 else None
             )
+            embedding_vector_value_sql = "NULL::vector(512)"
+            params: list[Any] = [
+                chunk.chunk_id,
+                chunk.document_id,
+                chunk.chunk_index,
+                chunk.text,
+                chunk.source_uri,
+                embedding,
+            ]
+            if embedding_vector is not None:
+                embedding_vector_value_sql = "%s::vector"
+                params.append(embedding_vector)
+            params.extend(
+                [
+                    _jsonb_param(chunk.metadata),
+                    _jsonb_param(payload),
+                ]
+            )
             self.connection.execute(
-                """
+                f"""
                 INSERT INTO document_chunks (
                     chunk_id,
                     document_id,
@@ -95,10 +113,7 @@ class PostgresStorageRepository:
                     %s,
                     %s,
                     %s,
-                    CASE
-                        WHEN %s IS NULL THEN NULL
-                        ELSE %s::vector
-                    END,
+                    {embedding_vector_value_sql},
                     %s,
                     %s
                 )
@@ -112,18 +127,7 @@ class PostgresStorageRepository:
                     metadata = EXCLUDED.metadata,
                     payload = EXCLUDED.payload
                 """,
-                (
-                    chunk.chunk_id,
-                    chunk.document_id,
-                    chunk.chunk_index,
-                    chunk.text,
-                    chunk.source_uri,
-                    embedding,
-                    embedding_vector,
-                    embedding_vector,
-                    _jsonb_param(chunk.metadata),
-                    _jsonb_param(payload),
-                ),
+                tuple(params),
             )
 
     def save_structured_records(self, records: tuple[StructuredRecord, ...]) -> None:

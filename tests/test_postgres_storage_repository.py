@@ -88,10 +88,8 @@ def test_postgres_repository_writes_document_chunks_with_payload() -> None:
     assert params[1] == "doc_fund_a_factsheet"
     assert params[2] == 0
     assert params[5] is None
-    assert params[6] is None
-    assert params[7] is None
-    assert _jsonb_value(params[8])["dataset_name"] == "synthetic_fund_seed"
-    assert _jsonb_value(params[9])["chunk_id"] == "chunk_doc_fund_a_factsheet_000"
+    assert _jsonb_value(params[6])["dataset_name"] == "synthetic_fund_seed"
+    assert _jsonb_value(params[7])["chunk_id"] == "chunk_doc_fund_a_factsheet_000"
 
 
 def test_postgres_repository_writes_document_chunk_embedding_as_jsonb() -> None:
@@ -113,8 +111,7 @@ def test_postgres_repository_writes_document_chunk_embedding_as_jsonb() -> None:
 
     assert _jsonb_value(params[5]) == [0.1, 0.2, 0.3]
     assert params[6] == "[0.1,0.2,0.3]"
-    assert params[7] == "[0.1,0.2,0.3]"
-    assert _jsonb_value(params[9])["embedding"] == [0.1, 0.2, 0.3]
+    assert _jsonb_value(params[8])["embedding"] == [0.1, 0.2, 0.3]
 
 
 def test_postgres_repository_writes_structured_records_with_stable_key() -> None:

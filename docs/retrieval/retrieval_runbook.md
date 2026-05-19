@@ -20,10 +20,10 @@ docker compose ps
 ```
 Expected: `api`, `postgres`, `redis` all healthy.
 
-## 2. Ensure Dataset Is Available In API Container
-Current Dockerfile does not copy `data/` into `/app`, so copy it manually for runtime verification:
+## 2. Verify Dataset Is Present In API Container
+`data/` is baked into the `api` image. Quick check:
 ```bash
-docker compose cp data api:/app/data
+docker compose exec -T api ls -la /app/data/manifest.json
 ```
 
 ## 3. Run Seed Ingestion To PostgreSQL
@@ -76,7 +76,7 @@ docker compose down
 
 ## Troubleshooting
 - `psycopg is required` on host: run ingestion checks inside `api` container or install project deps locally.
-- `FileNotFoundError /app/data/manifest.json`: copy data directory with `docker compose cp data api:/app/data`.
+- `FileNotFoundError /app/data/manifest.json`: rebuild the image with `docker compose up --build -d` and re-check `/app/data/manifest.json`.
 - Empty retrieval results: verify embeddings exist and backfill vector column via retrieval service before querying.
 - Vector index creation fallback: retrieval utilities try `hnsw` first, then `ivfflat`.
 
