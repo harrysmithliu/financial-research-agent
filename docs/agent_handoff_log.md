@@ -10,52 +10,42 @@ When an agent finishes a bounded phase or hands work to another agent, add a new
 
 Completed handoffs use this top-level heading format:
 
-- `## Handoff YYYY-MM-DD-HHMMZ: Short Title`
+```markdown
+## Handoff YYYY-MM-DD-HHMMZ: Short Title
 
 `HHMMZ` is the 24-hour UTC hour and minute, and `Z` means UTC. For completed handoffs, the heading timestamp is the actual handoff time.
 
 Top-level handoff sections must be ordered strictly by their heading timestamps from earliest to latest. A top-level `## Handoff ...` section represents an actual completed handoff, not a future task placeholder.
 
-Planned checkpoints are optional and are not top-level sections. Do not add a planned checkpoint unless there is a clear expected return point; prefer keeping the task flow linear when no explicit return is needed.
-
-When Agent A completes work and hands the next task to Agent B, Agent A creates a top-level `## Handoff ...` entry. If Agent A expects the work to return later, Agent A may add a nested planned checkpoint under that same handoff:
-
-```markdown
-### Planned Checkpoint: Short Title
-
-Return To: Agent / Role
-
-Status: `planned`
-
-#### Trigger
-
-#### Goal
-
-#### Suggested First Task
-
-#### Acceptance Criteria
-
-#### Known Gaps Or Out Of Scope
-```
-
-The nested planned checkpoint should follow this format and describe the future work owner, trigger conditions, goal, suggested first task, acceptance criteria, and known gaps or out-of-scope work.
-
-When Agent B completes the returned work, Agent B must not edit Agent A's original planned checkpoint directly. Instead, Agent B creates a new top-level `## Handoff YYYY-MM-DD-HHMMZ: Short Title` entry using the actual handoff time and references the originating planned checkpoint when applicable.
-
-When Agent A later reads the handoff log and confirms that the new top-level handoff satisfies its nested planned checkpoint, Agent A removes the fulfilled planned checkpoint from the original handoff and proceeds from the new handoff.
-
 Each handoff entry should include:
 
-- from role
-- to role
-- handoff status: `ready`, `blocked`, or `planned`
-- goal for the next agent
-- input artifacts and reference docs
-- suggested first task
-- acceptance criteria
-- known gaps or out-of-scope work
+From: Agent / Role
+To: Agent / Role
+### Completions
+### Inputs
+### Outputs
+### Suggestions
+### Expectations
 
-Agents should keep this document concise but operational. The next agent should be able to start work from the latest relevant entry without reconstructing context from chat history.
+Completions = what the current handoff owner has already completed.
+Inputs = the input context received by the current agent.
+Outputs = the deliverables produced by the current agent.
+Suggestions = recommended next actions.
+Expectations = what the next agent is expected to achieve in the next phase.
+
+If Agent A expects the work to return later, Agent A may add a nested planned checkpoint under that same handoff. Planned checkpoints are optional and are not top-level sections. Do not add a planned checkpoint unless there is a clear expected return point; prefer keeping the task flow linear when no explicit return is needed:
+
+### Planned Checkpoint: Short Title
+Return to: Agent / Role
+#### Trigger
+```
+
+The nested planned checkpoint should only include `Return To:` and `#### Trigger`.
+When the role listed in `To:` for a handoff completes that handoff, it should remove the nested planned checkpoint from that handoff and create a new top-level `## Handoff YYYY-MM-DD-HHMMZ: Short Title` entry using the actual handoff time. 
+
+Keep the wording as concise as possible while preserving necessary information. The next agent should be able to start work from the latest relevant entry without reconstructing context from chat history.
+
+The main body is below: 
 
 ## Handoff 2026-05-11-1347Z: Data Seed To Ingestion
 
@@ -63,15 +53,13 @@ From: Data Engineering Agent
 
 To: Ingestion / Backend Agent
 
-Status: `ready`
+### Completions
 
-### Goal
+Defined the kickoff scope for the first production-shaped batch ingestion path over the local synthetic seed dataset.
 
-Implement the first production-shaped batch ingestion path for the local synthetic seed dataset.
+The path should read `data/manifest.json`, load each declared source, normalize raw source data into canonical internal formats, and keep interfaces clear for later chunking, embedding, storage, and MCP tool access.
 
-The ingestion path should read `data/manifest.json`, load each declared source, normalize raw source data into canonical internal formats, and leave clear interfaces for chunking, embedding, storage, and MCP tool access.
-
-### Input Artifacts
+### Inputs
 
 Data sources:
 
@@ -90,9 +78,9 @@ Reference docs:
 - `docs/canonical_data_formats.md`
 - `data/README.md`
 
-### Suggested First Task
+### Outputs
 
-Create the initial project code skeleton for Phase 1 ingestion:
+Initial Phase 1 ingestion skeleton:
 
 ```text
 ingestion/
@@ -108,32 +96,25 @@ storage/
 `- models.py
 ```
 
-Keep models and loaders small. The first milestone should run locally without PostgreSQL, pgvector, Redis, or an LLM provider.
-
-### Required Normalization Behavior
-
-Implement loading and normalization for:
+Required normalization coverage:
 
 1. Structured fund records
    - Source: `data/sample_funds/funds.json`
    - Canonical output: `StructuredRecord`
    - Later storage target: `Fund`
-
 2. Fund factsheets
    - Source: `data/sample_documents/*.md`
    - Canonical output: `Document`
    - Later processing target: `DocumentChunk`
-
 3. Synthetic platform issues
    - Source: `data/sample_issues/issues.json`
    - Canonical output: issue metadata as `StructuredRecord`
    - Canonical output: issue bodies and comments as `Document`
-
 4. Fund evaluation cases
    - Source: `data/eval_cases/fund_eval_cases.json`
    - Canonical output: `EvalCase`
 
-### Implementation Notes
+Implementation constraints:
 
 - Follow the package layout in `docs/financial_research_agent_requirements.md`.
 - Place database-facing models in `storage/models.py`.
@@ -142,21 +123,13 @@ Implement loading and normalization for:
 - Preserve `source_uri`, `source_type`, `dataset_name`, and entity metadata for citation, audit, debugging, replay, and evaluation.
 - Do not introduce real client data or live investment advice.
 
-### Minimal Acceptance Criteria
+### Suggestions
 
-The first ingestion handoff is complete when:
+Create the initial project code skeleton shown above and keep modules small.
 
-- `data/manifest.json` can be parsed.
-- All declared local source files can be resolved from the repository root.
-- `funds.json` normalizes into four fund `StructuredRecord` items.
-- Four factsheets normalize into four `Document` items.
-- Issue sample data normalizes into issue metadata records plus issue/comment documents.
-- Five fund eval cases normalize into five `EvalCase` items.
-- Unit tests cover successful loading and at least one malformed input path.
+The first milestone should run locally without PostgreSQL, pgvector, Redis, or an LLM provider.
 
-### Suggested Test Focus
-
-Start with deterministic tests around:
+Suggested test focus:
 
 - manifest parsing
 - source path resolution
@@ -165,17 +138,14 @@ Start with deterministic tests around:
 - issue/comment normalization
 - eval case validation
 
-### Out Of Scope
+### Expectations
 
-- Embedding generation
-- pgvector indexing
-- PostgreSQL migrations
-- Redis-backed jobs
-- FastAPI route wiring
-- LangGraph workflow execution
-- MCP Gateway and MCP tools
+- Build deterministic normalization for all listed seed sources through the planned ingestion skeleton.
+- Keep canonical outputs stable for `StructuredRecord`, `Document`, and `EvalCase`.
+- Add focused tests for manifest parsing, source resolution, and malformed input paths.
+- Preserve citation/audit metadata fields needed by later phases.
 
-These should follow after the local normalization path is stable.
+- Do not implement embeddings, pgvector indexing, PostgreSQL migrations, Redis jobs, FastAPI route wiring, LangGraph runtime, or MCP Gateway tools.
 
 ## Handoff 2026-05-11-1910Z: Ingestion Stable To External Data Expansion
 
@@ -183,11 +153,9 @@ From: Ingestion / Backend Agent
 
 To: Data Engineering Agent
 
-Status: `ready`
+### Completions
 
-### Completed Ingestion Work
-
-The first local manifest-driven ingestion path is stable and ready for external data expansion.
+Confirmed the first local manifest-driven ingestion path is stable and ready for external data expansion.
 
 Implemented code artifacts:
 
@@ -205,7 +173,7 @@ from ingestion.jobs import load_seed_dataset
 result = load_seed_dataset(repo_root)
 ```
 
-Current output shape:
+Current deterministic output shape:
 
 - 4 fund `StructuredRecord` items from `data/sample_funds/funds.json`
 - 4 factsheet `Document` items from `data/sample_documents/*.md`
@@ -226,13 +194,7 @@ Latest verified result:
 30 passed
 ```
 
-### Goal
-
-Expand the local seed dataset with small, curated external samples from Hugging Face and GitHub while preserving the same manifest-driven ingestion contract.
-
-The next agent should start with data expansion, not backend rewiring. Keep additions small and inspectable.
-
-### Input Artifacts And Reference Docs
+### Inputs
 
 Code:
 
@@ -256,67 +218,45 @@ Reference docs:
 - `docs/canonical_data_formats.md`
 - `data/README.md`
 
-### Suggested Data Sources
+### Outputs
+
+Expansion target:
+
+- Preserve the same manifest-driven ingestion contract while adding small curated external samples.
+
+Suggested external sources:
 
 - TAT-QA small sample for financial QA and table/text reasoning.
 - FinAgent Benchmark small sample for agentic finance evaluation.
-- OpenBB or QuantConnect Lean GitHub issues and comments for platform issue research.
+- OpenBB or QuantConnect Lean GitHub issues/comments for platform issue research.
 
-### Required Data Engineering Work
+Required data engineering work:
 
 - Add curated external samples in small batches only.
-- Normalize Hugging Face samples into `Document` and `EvalCase` records.
-- Normalize GitHub issues and comments into issue metadata `StructuredRecord` items plus issue/comment `Document` records.
-- Update `data/manifest.json` with each new source.
-- Update `data/README.md` with source provenance, sample size, licensing notes, and replacement path.
+- Normalize Hugging Face samples into `Document` and `EvalCase`.
+- Normalize GitHub issues/comments into issue metadata `StructuredRecord` plus issue/comment `Document` records.
+- Update `data/manifest.json` for each new source.
+- Update `data/README.md` with provenance, sample size, licensing notes, and replacement path.
 - Add data quality checks for missing fields, duplicate `source_uri`, broken citations, and unsupported task types.
 
-### Suggested First Task
+### Suggestions
 
 Add a tiny external eval dataset slice:
 
 - 5 to 10 TAT-QA-style cases, or
 - 5 to 10 FinAgent Benchmark cases.
 
-Keep the first external batch small enough that reviewers can inspect every record manually.
+Keep the first external batch small enough for manual review.
 
-### Minimal Acceptance Criteria
+### Expectations
 
-The next data expansion handoff is complete when:
+- Add a small curated external data slice with documented provenance and licensing.
+- Keep new samples compatible with the existing manifest-driven ingestion path.
+- Ensure eval cases keep clear citation/evidence references and remain safe for local use.
+- Keep changes inspectable and reversible so ingestion hardening can proceed safely.
 
-- External source provenance is documented.
-- New samples are listed in `data/manifest.json`.
-- New samples normalize through the same ingestion path as synthetic seed data.
-- Eval cases include expected citations or clear evidence references.
-- No real client data, credentials, or unsafe investment advice are introduced.
-
-### Known Gaps And Out Of Scope
-
-Known gaps:
-
-- `load_seed_dataset` is local and synchronous.
-- No PostgreSQL persistence, pgvector indexing, Redis jobs, FastAPI route wiring, MCP Gateway, or LangGraph execution yet.
-- External data source schemas are not implemented yet.
-- Data quality checks are limited to deterministic model and normalizer validation.
-
-Out of scope for the next Data Engineering Agent:
-
-- Large-scale dataset mirroring
-- Unbounded GitHub crawling
-- Paid cloud ingestion
-- Live brokerage or trading data
-- Production use of real client data
-- Real investment advice
-
-### Out Of Scope
-
-- Embedding generation
-- pgvector indexing
-- PostgreSQL migrations
-- Redis-backed jobs
-- FastAPI route wiring
-- LangGraph workflow execution
-- MCP Gateway and MCP tools
+- Do not perform large-scale dataset mirroring, unbounded crawling, paid-cloud ingestion, or real-client/live-trading data use.
+- Do not expand into embeddings, PostgreSQL migrations, or other runtime-surface work in this handoff.
 
 ## Handoff 2026-05-11-2041Z: Phase 0 Runtime Foundation
 
@@ -324,15 +264,39 @@ From: Foundation / DevOps Agent
 
 To: API / Workflow Agent, Ingestion / Backend Agent, MCP Gateway / Tooling Agent
 
-Status: `ready`
 
-### Goal
+### Completions
 
-Provide the Phase 0 local runtime foundation so feature agents can build on a runnable, testable, Docker-backed service baseline.
+Completed the Phase 0 runtime foundation so feature work can start from a runnable, testable, Docker-backed baseline.
 
-### Completed Foundation Work
+Foundation verification completed:
 
-Implemented foundation artifacts:
+- Local tests:
+  - `python3 -m pytest`
+  - result: `34 passed`
+- Docker Compose runtime:
+  - `docker compose config`
+  - `docker compose up --build -d`
+  - `docker compose exec -T api python -c "from urllib.request import urlopen; print(urlopen('http://127.0.0.1:8000/health', timeout=2).read().decode())"`
+  - `docker compose down`
+- Observed API, PostgreSQL/pgvector, and Redis services as healthy during the Compose run.
+
+### Inputs
+
+Reference acceptance document:
+
+- `docs/phase_0_acceptance.md`
+
+Runtime baseline modules used by follow-up agents:
+
+- `api/main.py`
+- `config/settings.py`
+- `observability/logging.py`
+- `observability/request_context.py`
+
+### Outputs
+
+Delivered Phase 0 foundation artifacts:
 
 - `pyproject.toml`
 - `.env.example`
@@ -349,82 +313,35 @@ Implemented foundation artifacts:
 - `infra/docker/postgres/init/001_enable_pgvector.sql`
 - `docs/phase_0_acceptance.md`
 
-### Verification Evidence
+### Suggestions
 
-Detailed evidence is recorded in `docs/phase_0_acceptance.md`.
+Use this runtime baseline rather than creating parallel app or service entry points.
 
-Verified locally:
+- API / Workflow Agent:
+  - Add route skeletons behind the existing FastAPI app factory.
+  - Keep request ID propagation and JSON logging intact.
+- Ingestion / Backend Agent:
+  - Begin repository boundary design before database writes.
+  - Keep in-memory ingestion tests stable while introducing persistence.
+- MCP Gateway / Tooling Agent:
+  - Reuse settings, logging, and request context modules when introducing gateway routing.
 
-```bash
-python3 -m pytest
-```
+### Expectations
 
-Latest verified result:
+- Reuse the Phase 0 runtime baseline instead of creating parallel app/config/logging/Docker/CI paths.
+- Preserve request ID propagation and health endpoint stability while adding feature code.
+- Keep feature additions behind existing package boundaries (`api`, `config`, `observability`).
 
-```text
-34 passed
-```
-
-Verified Docker Compose:
-
-```bash
-docker compose config
-docker compose up --build -d
-docker compose exec -T api python -c "from urllib.request import urlopen; print(urlopen('http://127.0.0.1:8000/health', timeout=2).read().decode())"
-docker compose down
-```
-
-Observed API, PostgreSQL/pgvector, and Redis services as healthy during the Compose run.
-
-### Suggested First Task
-
-The next feature agent should use the Phase 0 runtime foundation rather than adding a parallel app or service entry point.
-
-For API / Workflow Agent:
-
-- Add route skeletons behind the existing FastAPI app factory.
-- Keep request ID propagation and JSON logging intact.
-
-For Ingestion / Backend Agent:
-
-- Begin repository boundary design before database writes.
-- Keep in-memory ingestion tests stable while introducing persistence.
-
-For MCP Gateway / Tooling Agent:
-
-- Use the existing settings, logging, and request context modules when introducing gateway routing.
-
-### Acceptance Criteria
-
-This handoff is complete when:
-
-- Future agents can run `python3 -m pytest` from the repository root.
-- Future agents can start the local service stack through Docker Compose.
-- `GET /health` remains lightweight and stable.
-- Request IDs continue to appear in health responses and JSON logs.
-- New feature work uses the existing `api`, `config`, and `observability` packages.
-
-### Known Gaps Or Out Of Scope
-
-- No database migrations yet.
-- No persistent ingestion repository yet.
-- No `POST /ingestion/jobs` route yet.
-- No full metrics endpoint yet.
-- No OpenTelemetry exporter configuration yet.
-- No MCP Gateway runtime yet.
-- No LangGraph runtime yet.
+- No replacement of the core runtime entry points.
+- No unrelated expansion into full metrics exporter wiring, MCP Gateway runtime, or LangGraph runtime unless explicitly planned in the next handoff.
 
 ### Planned Checkpoint: Foundation Runtime Back To Feature Agents
 
 Return To: API / Workflow Agent, Ingestion / Backend Agent, MCP Gateway / Tooling Agent
 
-Status: `planned`
-
 #### Trigger
 
 Start this checkpoint when a feature agent is ready to build on the Phase 0 runtime foundation.
-
-Minimum trigger conditions:
 
 - Phase 0 foundation artifacts are present.
 - `docs/phase_0_acceptance.md` records setup, health, Compose, and test evidence.
@@ -432,42 +349,15 @@ Minimum trigger conditions:
 - Docker Compose config and startup have been verified at least once.
 - Feature work needs an API route, repository boundary, gateway component, or runtime integration.
 
-#### Goal
-
-Use the Phase 0 foundation as the shared runtime baseline for Phase 1 and Phase 2 work without creating duplicate app, config, logging, Docker, or CI paths.
-
-#### Suggested First Task
-
-Inspect `api/main.py`, `config/settings.py`, `observability/logging.py`, and `docs/phase_0_acceptance.md`, then add the next feature behind the existing package boundaries.
-
-#### Acceptance Criteria
-
-- Feature work reuses the existing FastAPI app factory.
-- New runtime code preserves request ID propagation.
-- New tests run through the existing pytest configuration.
-- Docker Compose remains able to start API, PostgreSQL/pgvector, and Redis.
-- Any new known runtime gap is recorded in the relevant handoff or acceptance note.
-
-#### Known Gaps Or Out Of Scope
-
-- Do not replace the Phase 0 app entry point without an explicit architecture decision.
-- Do not add a parallel Compose stack for feature work.
-- Do not introduce paid cloud dependencies for local development.
-- Do not implement large feature surfaces in this checkpoint; use it as a coordination return point.
-
 ## Handoff 2026-05-11-2325Z: External Data Expansion Back To Ingestion
 
 From: Data Engineering Agent
 
 To: Ingestion / Backend Agent
 
-Status: `ready`
+### Completions
 
-### Goal
-
-Adapt and harden the ingestion normalization layer for the first external Hugging Face sample while keeping the existing synthetic seed ingestion stable.
-
-### Completed Data Expansion Work
+Completed the first external data expansion slice so ingestion can be hardened against a real curated Hugging Face sample while keeping synthetic seed ingestion stable.
 
 Added a tiny curated sample from FinAgent Benchmark:
 
@@ -488,76 +378,69 @@ Selected source records:
 - `MH_001`: multi-hop comparison
 - `ADV_001`: adversarial not-available case
 
-Additional artifacts:
+Verification evidence:
 
+- JSON validation:
+  - `python3 -m json.tool data/external/finagent_benchmark_sample.json`
+  - `python3 -m json.tool data/manifest.json`
+- Ingestion entry point smoke check:
+  - `python3 - <<'PY' ... load_seed_dataset('.') ... PY`
+- Latest observed result:
+  - `documents 13`
+  - `structured_records 7`
+  - `eval_cases 10`
+  - case IDs include `finagent_FE_001`, `finagent_NR_001`, `finagent_TR_001`, `finagent_MH_001`, `finagent_ADV_001`
+
+### Inputs
+
+External and local sources:
+
+- `Guen/finagent-benchmark` (curated local subset)
+- `data/external/raw/finagent-benchmark/benchmark_questions.json`
+- Existing seed ingestion path via `ingestion.jobs.load_seed_dataset`
+
+Reference context:
+
+- Existing manifest-driven ingestion contract
+- Existing canonical formats and ingestion tests
+
+### Outputs
+
+Produced artifacts:
+
+- `data/external/finagent_benchmark_sample.json`
 - `docs/external_data_source_selection.md`
 - `scripts/download_finagent_benchmark.py`
-- `.gitignore` now ignores `data/external/raw/`
-- `data/manifest.json` registers `finagent_benchmark_sample`
-- `data/README.md` documents provenance, license, sample size, and selection method
+- `.gitignore` update to ignore `data/external/raw/`
+- `data/manifest.json` registration for `finagent_benchmark_sample`
+- `data/README.md` updates for provenance, license, sample size, and selection method
 
-### Verification Evidence
+Normalization/output implications:
 
-Validated JSON:
+- External sample is now wired into the same manifest-driven ingestion flow as synthetic seed data.
+- Curated cases are available to exercise downstream retrieval, citation, and evaluation behavior.
 
-```bash
-python3 -m json.tool data/external/finagent_benchmark_sample.json
-python3 -m json.tool data/manifest.json
-```
-
-Verified the existing ingestion entry point can load the new sample without backend changes:
-
-```bash
-python3 - <<'PY'
-from ingestion.jobs import load_seed_dataset
-result = load_seed_dataset('.')
-print('documents', len(result.documents))
-print('structured_records', len(result.structured_records))
-print('eval_cases', len(result.eval_cases))
-print([case.case_id for case in result.eval_cases])
-PY
-```
-
-Latest observed result:
-
-```text
-documents 13
-structured_records 7
-eval_cases 10
-['fund_compare_001', 'fund_brief_001', 'fund_qa_001', 'fund_qa_002', 'fund_compare_002', 'finagent_FE_001', 'finagent_NR_001', 'finagent_TR_001', 'finagent_MH_001', 'finagent_ADV_001']
-```
-
-### Suggested First Task
+### Suggestions
 
 Add deterministic ingestion tests for the external FinAgent sample.
 
-Focus first on:
+Suggested focus:
 
-- manifest parsing of `finagent_benchmark_sample`
+- manifest parsing for `finagent_benchmark_sample`
 - normalization into five `EvalCase` items
 - preservation of external provenance fields
 - adversarial `NOT_AVAILABLE` expected-answer behavior
 - duplicate or missing citation detection if a data quality helper already exists
 
-### Acceptance Criteria
+### Expectations
 
-This handoff is complete when:
+- Harden the FinAgent sample path with deterministic tests and stable provenance handling.
+- Keep external sample behavior reproducible through the existing ingestion flow.
+- Preserve explicit rationale for deferred `huggingface_dataset` source-type expansion.
 
-- Existing synthetic seed ingestion remains stable.
-- The FinAgent sample is covered by deterministic normalizer or ingestion tests.
-- Any decision about `source_metadata` preservation is reflected in code or explicitly documented.
-- Any decision about adding a dedicated `huggingface_dataset` `source_type` is either implemented or deferred with rationale.
-- `python3 -m pytest` passes.
-
-### Known Gaps Or Out Of Scope
-
-- The raw Hugging Face snapshot is intentionally not tracked in git.
-- `source_metadata` in the tracked sample is currently accepted by the raw JSON shape but not preserved by the current `EvalCase` dataclass.
-- Source type decision: keep `finagent_benchmark_sample` registered as `source_type: sample_dataset` for now. This is a curated local sample, not a live Hugging Face loader, and the existing manifest-driven ingestion path already supports it without new infrastructure.
-- Defer a dedicated `huggingface_dataset` source type until ingestion needs source-specific loader behavior, remote refresh semantics, dataset split handling, or multiple Hugging Face datasets with distinct normalization rules.
-- Do not add PostgreSQL persistence in this handoff unless explicitly directed.
-- Do not start large-scale Hugging Face mirroring.
-- Do not add TAT-QA yet; prove the first external sample path first.
+- Do not add PostgreSQL persistence in this handoff.
+- Keep the raw Hugging Face snapshot untracked.
+- Do not start large-scale mirroring or add new dataset families until this first external path is proven.
 
 ## Handoff 2026-05-12-1858Z: FinAgent Ingestion Hardening Complete
 
@@ -565,25 +448,50 @@ From: Ingestion / Backend Agent
 
 To: Ingestion / Backend Agent
 
-Status: `ready`
 
-### Goal
+### Completions
 
-Close the external FinAgent sample ingestion hardening loop and make the project ready for the next ingestion storage checkpoint.
-
-### Completed Work
+Closed the first FinAgent sample ingestion hardening loop and stabilized the external-sample path for the next storage phase.
 
 Implemented and verified:
 
 - Manifest and end-to-end ingestion tests now expect `finagent_benchmark_sample`.
 - `load_seed_dataset` loads 8 manifest sources and 10 eval cases.
-- `EvalCase` now has `metadata` for provenance and source-specific metadata.
+- `EvalCase` now includes `metadata` for provenance and source-specific metadata.
 - FinAgent `source_metadata` is preserved under `EvalCase.metadata["source_metadata"]`.
-- `safety_expectations` now stays focused on safety and behavior expectations.
+- `safety_expectations` remains focused on safety and behavior expectations.
 - FinAgent-specific deterministic tests cover all 5 curated cases.
 - The adversarial `finagent_ADV_001` case preserves `expected_answer: NOT_AVAILABLE`, `should_state_not_available`, `not_available_expected`, `hf://` citation, and source metadata.
-- Added lightweight eval case data quality checks for duplicate case IDs, missing expected citations, missing citation `source_uri`, and unsupported task types.
+- Added data quality checks for duplicate case IDs, missing expected citations, missing citation `source_uri`, and unsupported task types.
 - Documented the source type decision to keep `finagent_benchmark_sample` as `source_type: sample_dataset` and defer `huggingface_dataset`.
+
+Verification evidence:
+
+- `python3 -m pytest tests`
+- Latest result: `42 passed`
+
+### Inputs
+
+Upstream inputs from prior external-data expansion:
+
+- `data/external/finagent_benchmark_sample.json`
+- `data/manifest.json`
+- `data/README.md`
+- `docs/external_data_source_selection.md`
+
+Code and test surfaces used in hardening:
+
+- seed ingestion path via `ingestion.jobs.load_seed_dataset`
+- eval case normalization and ingestion test suite
+
+### Outputs
+
+Hardening outputs:
+
+- Stable FinAgent external ingestion behavior with deterministic coverage
+- Preserved external provenance through `EvalCase.metadata`
+- Explicit deferred decision for `huggingface_dataset` source type
+- Data quality checks for eval case integrity
 
 Related commits:
 
@@ -593,39 +501,18 @@ Related commits:
 - `847beaf` Add eval case data quality checks
 - `9759582` Document FinAgent source type decision
 
-### Verification Evidence
+### Suggestions
 
-Final verification command:
+Begin storage persistence work by designing the repository boundary between canonical ingestion outputs and durable storage models.
 
-```bash
-python3 -m pytest tests
-```
+### Expectations
 
-Latest verified result:
+- Start storage-persistence implementation from canonical ingestion outputs through a clear repository boundary.
+- Keep synthetic seed and FinAgent ingestion behavior stable while extending storage depth.
+- Preserve provenance and adversarial-case behavior coverage as storage work begins.
 
-```text
-42 passed
-```
-
-### Suggested First Task
-
-Begin the planned storage persistence checkpoint by designing the repository boundary between canonical ingestion outputs and durable storage models.
-
-### Acceptance Criteria For This Handoff
-
-- Existing synthetic seed ingestion remains stable.
-- FinAgent sample is covered by deterministic normalizer and ingestion tests.
-- External provenance is preserved in `EvalCase.metadata`.
-- `NOT_AVAILABLE` adversarial behavior is covered by tests.
-- Data quality checks cover the first eval case quality gates.
-- The `huggingface_dataset` source type decision is explicitly deferred with rationale.
-
-### Known Gaps Or Out Of Scope
-
-- No PostgreSQL persistence has been added yet.
-- No document chunking, embedding, or pgvector indexing has been added yet.
-- No FastAPI ingestion route, MCP Gateway, MCP tools, or LangGraph workflow changes were made in this handoff.
-- `data/external/raw/` remains intentionally untracked.
+- No FastAPI route wiring, MCP Gateway tooling, or LangGraph workflow expansion in this handoff.
+- No chunking/embedding/pgvector implementation in this specific step.
 
 ## Handoff 2026-05-13-1634Z: Canonical Ingestion Storage Boundary
 
@@ -633,15 +520,12 @@ From: Ingestion / Backend Agent
 
 To: Ingestion / Backend Agent
 
-Status: `ready`
 
-### Goal
+### Completions
 
-Complete the planned `Canonical Ingestion To Storage Persistence` checkpoint by creating a durable-storage boundary for canonical ingestion outputs without introducing PostgreSQL writes yet.
+Completed `Canonical Ingestion To Storage Persistence` at the repository-boundary level without introducing PostgreSQL writes.
 
-### Completed Work
-
-Implemented storage boundary artifacts:
+Implemented:
 
 - `storage/repository.py`
 - `StorageRepository` protocol
@@ -650,33 +534,12 @@ Implemented storage boundary artifacts:
 - `IngestionRunResult`
 - `run_seed_ingestion(repo_root, repository, started_at=None)`
 
-The repository boundary now accepts and returns:
+Seed ingestion now loads manifest-driven data, persists canonical objects through the repository boundary, records ingestion job counts and source IDs, and records failed jobs with error messages before re-raising.
 
-- `Document`
-- `StructuredRecord`
-- `EvalCase`
-- `IngestionJobRecord`
+Verification:
 
-The seed ingestion orchestration now:
-
-- loads the current manifest-driven seed dataset
-- writes structured records, documents, and eval cases through the repository boundary
-- records completed ingestion job counts and source IDs
-- records failed ingestion jobs with error messages before re-raising the original exception
-
-### Verification Evidence
-
-Final verification command:
-
-```bash
-python3 -m pytest tests
-```
-
-Latest verified result:
-
-```text
-54 passed
-```
+- `python3 -m pytest tests`
+- Latest result at handoff time: `54 passed`
 
 Related commits:
 
@@ -686,25 +549,29 @@ Related commits:
 - `79fba03` Cover storage repository audit metadata
 - `f8e5485` Protect ingestion storage runtime boundary
 
-### Acceptance Criteria Satisfied
+### Inputs
 
-- Canonical objects can be mapped into a storage repository boundary without losing citation or audit metadata.
-- Ingestion job records include source identifiers, dataset name, counts, status, errors, and timestamps.
-- Storage work remains testable locally and does not require an LLM provider.
-- PostgreSQL/pgvector integration remains deferred behind repository/indexer interfaces.
-- Runtime boundary tests confirm ingestion/storage do not import FastAPI or `api.main`.
+- Upstream stable canonical ingestion outputs from prior handoffs.
+- Existing manifest-driven ingestion flow and seed dataset.
+- Requirement to preserve citation/audit metadata and keep storage runtime decoupled from API surface.
 
-### Suggested First Task
+### Outputs
 
-Continue within Ingestion / Backend Agent if the next goal is PostgreSQL repository implementation, or hand to API / Workflow Agent if the next goal is a `POST /ingestion/jobs` route over the existing repository boundary.
+- A durable repository boundary that accepts and returns `Document`, `StructuredRecord`, `EvalCase`, and `IngestionJobRecord`.
+- Ingestion orchestration path that writes canonical outputs and ingestion job records via repository abstractions.
+- Local test-backed storage boundary that does not require LLM provider integration.
+- Runtime-boundary behavior confirming ingestion/storage code does not import FastAPI or `api.main`.
 
-### Known Gaps Or Out Of Scope
+### Suggestions
 
-- No actual PostgreSQL persistence has been implemented yet.
-- No migrations or SQLAlchemy-style database mappings have been added yet.
-- No document chunking, embedding, or pgvector indexing has been added yet.
-- No FastAPI ingestion route has been added yet.
-- No MCP Gateway, MCP tools, or LangGraph workflow changes were made in this handoff.
+Continue within Ingestion / Backend Agent for PostgreSQL repository implementation. If priority is API triggering, hand to API / Workflow Agent for a `POST /ingestion/jobs` route over the existing repository boundary.
+
+### Expectations
+
+- Preserve synthetic seed and FinAgent stability while extending from repository boundary to PostgreSQL persistence.
+- Keep citation/audit/provenance fields intact end to end.
+- Maintain decoupling from API, MCP Gateway, and LangGraph runtime surfaces during storage-depth work.
+- PostgreSQL persistence, migrations, document chunking, embedding, pgvector indexing, and FastAPI ingestion route wiring remain next-phase work beyond this handoff.
 
 ## Handoff 2026-05-13-2330Z: Ingestion Storage Ready For Retrieval
 
@@ -712,22 +579,19 @@ From: Ingestion / Backend Agent
 
 To: RAG / Retrieval Agent
 
-Status: `ready`
 
-### Goal
+### Completions
 
-Hand off the completed canonical ingestion and storage persistence path so retrieval work can begin from stored `DocumentChunk` records instead of raw source files.
+Completed canonical ingestion and storage persistence handoff so retrieval can start from stored `DocumentChunk` records.
 
-### Completed Work
-
-Implemented the PostgreSQL-backed ingestion storage path:
+Implemented PostgreSQL-backed storage path:
 
 - `storage/postgres.py`
 - `PostgresStorageRepository`
 - PostgreSQL connection helper
 - ingestion storage migration runner
 - JSONB parameter handling for canonical payloads
-- read-side hydration back into canonical storage models
+- read-side hydration into canonical storage models
 
 Implemented document chunk storage and deterministic chunk generation:
 
@@ -739,45 +603,24 @@ Implemented document chunk storage and deterministic chunk generation:
 - `IngestionResult.document_chunks`
 - `run_seed_ingestion` persistence of generated chunks
 
-Implemented the Postgres seed ingestion runner:
+Implemented Postgres seed ingestion runner:
 
 - `ingestion/postgres_runner.py`
 - `run_seed_ingestion_to_postgres(repo_root, settings=None, database_url=None, started_at=None)`
 
-The runner now resolves a database URL, opens a PostgreSQL connection, runs ingestion storage migrations, persists the seed ingestion outputs through `PostgresStorageRepository`, commits on success, rolls back on failure, and closes the connection.
+Runner behavior covers database URL resolution, connection open, migration run, repository persistence, commit/rollback, and connection close.
 
-Current deterministic seed ingestion output counts:
+Deterministic output counts:
 
 - 7 structured records
 - 13 documents
 - 17 document chunks
 - 10 eval cases
 
-### Verification Evidence
+Verification:
 
-Final verification command:
-
-```bash
-python3 -m pytest tests
-```
-
-Latest verified result:
-
-```text
-76 passed
-```
-
-Additional targeted verification:
-
-```bash
-python3 -m pytest tests/test_postgres_ingestion_runner.py tests/test_postgres_storage_repository.py
-```
-
-Latest targeted result:
-
-```text
-18 passed
-```
+- `python3 -m pytest tests` -> `76 passed`
+- `python3 -m pytest tests/test_postgres_ingestion_runner.py tests/test_postgres_storage_repository.py` -> `18 passed`
 
 Related commits:
 
@@ -788,120 +631,54 @@ Related commits:
 - `0a99b8f` Add deterministic document chunking
 - `0ba1e44` Add Postgres seed ingestion runner
 
-### Acceptance Criteria Satisfied
+### Inputs
 
-- Canonical ingestion outputs can be persisted through a repository boundary.
-- PostgreSQL schema exists for ingestion jobs, documents, document chunks, structured records, and evaluation cases.
-- Seed ingestion generates citation-ready `DocumentChunk` records with stable IDs, source URIs, metadata, and empty embeddings.
-- PostgreSQL adapter can write and read canonical payloads without requiring API, MCP Gateway, LangGraph, or LLM provider imports.
-- The Postgres seed ingestion runner wires settings/database URL, migrations, repository persistence, transaction success, transaction rollback, and connection close behavior.
+- Upstream canonical ingestion/storage boundary from the prior handoff.
+- Manifest-driven seed ingestion outputs and existing storage migration baseline.
+- Requirement to keep retrieval-ready citation metadata (`chunk_id`, `document_id`, `source_uri`) intact.
 
-### Suggested First Task
+### Outputs
 
-RAG / Retrieval Agent should begin with the stored `DocumentChunk` boundary:
+- PostgreSQL persistence path for ingestion jobs, documents, document chunks, structured records, and eval cases.
+- Stored `DocumentChunk` boundary usable by retrieval work.
+- Postgres ingestion runner with tested transaction behavior.
+- Retrieval-ready deterministic dataset persisted through repository boundaries.
 
-- define the embedding adapter interface
-- decide how embeddings are represented before pgvector conversion
+### Suggestions
+
+RAG / Retrieval Agent should start from stored `DocumentChunk` records:
+
+- define embedding adapter interface
+- define embedding representation before pgvector conversion
 - add pgvector-compatible indexing for `DocumentChunk`
-- preserve `chunk_id`, `document_id`, `source_uri`, and citation metadata through retrieval results
+- preserve `chunk_id`, `document_id`, `source_uri`, and citation metadata in retrieval results
 
-API / Workflow Agent can work in parallel after reading this handoff by wrapping `run_seed_ingestion_to_postgres` behind a `POST /ingestion/jobs` route, but should avoid bypassing the repository boundary.
+API / Workflow Agent can run in parallel by wrapping `run_seed_ingestion_to_postgres` behind `POST /ingestion/jobs` without bypassing repository boundaries.
 
-### Known Gaps Or Out Of Scope
+### Expectations
 
-- No embedding provider adapter has been implemented yet.
-- No pgvector index or vector search query path has been implemented yet.
-- No FastAPI ingestion route has been added yet.
-- No MCP Gateway tools or LangGraph workflow changes were made in this handoff.
-- The local host Python environment used for verification did not have `ruff` installed, so lint was not run.
-- The Postgres runner is covered by fake-connection tests; a live Docker Compose PostgreSQL write/read smoke test remains for a later runtime verification pass.
+- Establish a retrieval baseline over stored chunks while preserving citation/provenance integrity.
+- Keep retrieval/storage work decoupled from MCP Gateway and LangGraph runtime expansion in this phase.
+- Embedding provider adapter, pgvector search path, and live Docker Compose PostgreSQL smoke verification remain next-phase tasks.
 
 ### Planned Checkpoint: Postgres Runtime Smoke Test
 
 Return To: Foundation / DevOps Agent
 
-Status: `planned`
-
 #### Trigger
 
-Start this checkpoint after the PostgreSQL ingestion and retrieval runtime paths are stable enough that a live Docker Compose smoke test will provide meaningful signal.
-
-Minimum trigger conditions:
-
 - `run_seed_ingestion_to_postgres` remains the canonical seed ingestion runner for PostgreSQL-backed storage.
-- The storage migration file is present and expected to initialize ingestion jobs, documents, document chunks, structured records, and eval cases.
-- RAG / Retrieval Agent has either started or completed a retrieval boundary over stored `DocumentChunk` records.
-- Runtime verification needs to confirm real PostgreSQL writes and reads rather than fake-connection behavior only.
-- Docker Compose remains the intended local runtime for API, PostgreSQL/pgvector, and Redis.
-
-#### Goal
-
-Verify the live local runtime path for PostgreSQL-backed ingestion and decide whether CI should grow a PostgreSQL integration job.
-
-#### Suggested First Task
-
-Start the Docker Compose stack, run the storage migrations and `run_seed_ingestion_to_postgres` against the Compose PostgreSQL service, then verify persisted counts for ingestion jobs, structured records, documents, document chunks, and eval cases.
-
-#### Acceptance Criteria
-
-- Docker Compose starts PostgreSQL/pgvector, Redis, and API successfully.
-- The live PostgreSQL database applies ingestion storage migrations.
-- `run_seed_ingestion_to_postgres` completes successfully against the Compose database.
-- Persisted row counts match the deterministic seed ingestion counts or document any intentional changes.
-- A live read path confirms stored `DocumentChunk` records can be hydrated with `chunk_id`, `document_id`, `source_uri`, metadata, and embedding placeholder state.
-- The runtime verification result is recorded in the relevant acceptance or handoff document.
-- A clear decision is made on whether to add a PostgreSQL service-backed CI job now or defer it.
-
-#### Known Gaps Or Out Of Scope
-
-- Do not implement retrieval ranking or model-backed embeddings in this checkpoint.
-- Do not add MCP Gateway or LangGraph runtime code in this checkpoint.
-- Do not introduce paid cloud services.
-- Keep the smoke test small, deterministic, and suitable for local developer use.
+- Storage migrations for ingestion jobs, documents, document chunks, structured records, and eval cases are in place.
+- Retrieval work over stored `DocumentChunk` records has started.
+- Runtime verification needs live Docker Compose PostgreSQL write/read checks beyond fake-connection tests.
 
 ### Planned Checkpoint: Retrieval Baseline Stable To Next Data Expansion
 
 Return To: Data Engineering Agent
 
-Status: `planned`
-
 #### Trigger
 
-Start this checkpoint after RAG / Retrieval Agent has a baseline retrieval path over stored `DocumentChunk` records.
-
-Minimum trigger conditions:
-
 - Stored document chunks can be queried through a retrieval boundary.
-- An embedding adapter, deterministic test embedding, or retrieval index path exists.
+- An embedding adapter or retrieval index path exists.
 - Retrieval results preserve `chunk_id`, `document_id`, `source_uri`, and citation metadata.
 - Baseline retrieval tests pass.
-- At least synthetic fund factsheet chunks and FinAgent evidence-related chunks can be retrieved or inspected through the retrieval path.
-
-#### Goal
-
-Return to data expansion after retrieval quality can be tested, so the next external dataset batch can immediately exercise chunking, retrieval, citation, and evaluation behavior.
-
-#### Suggested First Task
-
-Read the latest retrieval handoff, confirm the trigger conditions are satisfied, then choose the next small curated data expansion slice.
-
-Preferred next candidates:
-
-- TAT-QA tiny sample for table/text financial QA and numerical reasoning.
-- A small real GitHub issue/comment sample from OpenBB or QuantConnect Lean for platform issue research.
-
-#### Acceptance Criteria
-
-- The next external batch is small enough for manual review.
-- Source provenance, license, sample size, and retrieval method are documented.
-- `data/manifest.json` and `data/README.md` are updated.
-- New records map cleanly to existing canonical data formats or clearly identify required schema changes.
-- New samples can be used to test retrieval recall, citation metadata preservation, or issue/document search behavior.
-- No real client data, credentials, live trading data, or unsafe investment advice is introduced.
-
-#### Known Gaps Or Out Of Scope
-
-- Do not start large-scale Hugging Face mirroring.
-- Do not start unbounded GitHub crawling.
-- Do not add storage persistence, FastAPI routes, MCP Gateway, or LangGraph workflow code from this checkpoint.
-- Keep the next data expansion reversible and easy to inspect.
